@@ -1,0 +1,32 @@
+# Her gönderimde: bütün testler (C++ / JS / Python) ve Arduino Uno derlemesi
+name: testler
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  testler:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Bütün testler (g++ ile)
+        run: python testleri_calistir.py
+
+  arduino-uno:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: PlatformIO
+        run: pip install platformio==6.2.0
+      - name: Uno için derle
+        run: pio run -d arduino

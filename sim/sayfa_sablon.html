@@ -1,0 +1,1612 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Servo Robot Kol</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Düzen: hobi tezgâhı — solda 3B kol (geniş), sağda telefon uygulamasındaki gibi servo kaydırıcıları ve değerler */
+:root {
+  --bg: #edf0f2; --panel: #f8f9fa; --ink: #1b2228; --muted: #5c6670; --line: #cfd6db;
+  --accent: #1f5fbf;      /* kolun mavisi */
+  --accent-ink: #ffffff; --ok: #2e8b57; --warn: #c98a12; --bad: #c0392b;
+  --view: #dfe5e9; --grid: #b9c3ca; --code-bg: #e6eaed;
+  --f-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", Roboto, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #13171b; --panel: #1a2026; --ink: #e2e7eb; --muted: #94a0aa; --line: #2b343b;
+    --accent: #5b9bf0; --accent-ink: #0d1a2b; --ok: #4fbf84; --warn: #e0a838; --bad: #e0675a;
+    --view: #1e252b; --grid: #34404a; --code-bg: #232b32; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #13171b; --panel: #1a2026; --ink: #e2e7eb; --muted: #94a0aa; --line: #2b343b;
+  --accent: #5b9bf0; --accent-ink: #0d1a2b; --ok: #4fbf84; --warn: #e0a838; --bad: #e0675a;
+  --view: #1e252b; --grid: #34404a; --code-bg: #232b32; color-scheme: dark;
+}
+html, body { height: 100%; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg); color: var(--ink); font: 14px/1.5 var(--f-body); box-sizing: border-box;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 12px; display: flex; flex-direction: column; gap: 10px;
+}
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; }
+h1 { font: 600 28px/1.1 var(--f-display); margin: 0; text-wrap: balance; }
+.sub { color: var(--muted); font-size: 13px; }
+.tabs { display: flex; gap: 4px; margin-left: auto; flex-wrap: wrap; }
+.tab { font: 500 15px var(--f-display); letter-spacing: .04em; text-transform: uppercase; cursor: pointer;
+  padding: 6px 14px; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 3px; }
+.tab[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pane { flex: 1; min-height: 0; }
+#p-sim { display: grid; grid-template-columns: minmax(0, 1fr) 350px; gap: 12px; }
+#p-kam { display: grid; grid-template-columns: minmax(0, 1fr) 390px; gap: 12px; }
+.kamview { position: relative; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; background: #000; align-self: start; }
+.kamview canvas { display: block; width: 100%; height: auto; cursor: default; }
+.kamview.secim canvas { cursor: crosshair; }
+.kamview .hud { bottom: auto; top: 10px; }
+.kalnokta { display: grid; grid-template-columns: 14px 58px 60px 60px auto; gap: 5px; align-items: center; font-size: 12.5px; }
+.kalnokta input, .renk-satir input[type="number"] { padding: 2px 4px; }
+.kalnokta.aktif, .renk-satir.aktif { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+.renk-satir { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto 54px 54px auto; gap: 5px; align-items: center; font-size: 12.5px; }
+.renk-satir input[type="text"] { width: 100%; box-sizing: border-box; font: 12.5px var(--f-body); padding: 2px 4px; border: 1px solid var(--line); border-radius: 3px; background: var(--bg); color: var(--ink); }
+.renk-satir .uyari { border-color: var(--bad); }
+.sw { width: 16px; height: 16px; border-radius: 3px; border: 1px solid var(--line); box-sizing: border-box; }
+.nesne-liste { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; max-height: 200px; overflow-y: auto; font: 12px var(--f-mono); }
+.nesne-liste li { display: flex; gap: 6px; align-items: center; }
+.nesne-liste li.kotu { color: var(--muted); }
+.view { position: relative; min-height: 380px; border: 1px solid var(--line); border-radius: 4px; overflow: hidden; background: var(--view); }
+.view canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+.hud { position: absolute; left: 10px; bottom: 10px; font: 12px/1.4 var(--f-mono); color: var(--muted); pointer-events: none;
+  background: color-mix(in srgb, var(--panel) 85%, transparent); padding: 6px 8px; border-radius: 3px; }
+aside { min-width: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 12px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+h2 { font: 600 16px/1.2 var(--f-display); letter-spacing: .06em; text-transform: uppercase; margin: 0; color: var(--muted); }
+label.ctl { display: grid; grid-template-columns: 92px 1fr 44px; gap: 8px; align-items: center; font-size: 13px; }
+label.ctl span:last-child { text-align: right; font: 13px var(--f-mono); font-variant-numeric: tabular-nums; }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+input[type="number"] { width: 100%; box-sizing: border-box; font: 13px var(--f-mono); padding: 4px 6px; border: 1px solid var(--line); border-radius: 3px; background: var(--bg); color: var(--ink); }
+button { font: 500 13px var(--f-body); padding: 6px 12px; border-radius: 3px; cursor: pointer; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.grid4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.grid4 label { display: flex; flex-direction: column; gap: 2px; font: 12px var(--f-mono); color: var(--muted); }
+.msg { font-size: 13px; min-height: 1.4em; } .msg.bad { color: var(--bad); } .msg.ok { color: var(--ok); }
+.note { color: var(--muted); font-size: 12.5px; max-width: 65ch; margin: 0; }
+code, .code { font: 13px var(--f-mono); background: var(--code-bg); border-radius: 3px; padding: 1px 5px; }
+.code { display: block; padding: 6px 8px; overflow-x: auto; white-space: nowrap; }
+.bar { height: 10px; background: var(--bg); border: 1px solid var(--line); border-radius: 2px; position: relative; overflow: hidden; }
+.bar > i { position: absolute; inset: 0 auto 0 0; background: var(--ok); }
+.bar.warn > i { background: var(--warn); } .bar.bad > i { background: var(--bad); }
+.tq { display: flex; justify-content: space-between; font: 13px var(--f-mono); font-variant-numeric: tabular-nums; }
+.pill { font: 12px var(--f-mono); padding: 1px 8px; border-radius: 999px; border: 1px solid var(--line); }
+.pill.on { background: var(--ok); border-color: var(--ok); color: var(--panel); }
+.mode { position: absolute; right: 10px; top: 10px; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.doc { max-width: 1100px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+.tbl-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 13px var(--f-display); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+td.num { text-align: right; font-family: var(--f-mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+tfoot td { font-weight: 600; }
+svg text { font-family: var(--f-body); }
+.jog { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+.jog button { font-family: var(--f-mono); padding: 5px 0; }
+label.adim { display: flex; align-items: center; gap: 4px; font-size: 13px; color: var(--muted); }
+select { font: 13px var(--f-mono); padding: 3px 4px; border: 1px solid var(--line); border-radius: 3px; background: var(--bg); color: var(--ink); }
+textarea { width: 100%; box-sizing: border-box; font: 12px var(--f-mono); padding: 6px; border: 1px solid var(--line); border-radius: 3px; background: var(--bg); color: var(--ink); resize: vertical; }
+details > summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+details.nasil > summary { font-size: 12.5px; list-style-position: inside; width: fit-content; }
+details.nasil > summary:hover { color: var(--ink); }
+details.nasil[open] > summary { margin-bottom: 4px; }
+.kalnokta button { padding: 3px 8px; }
+.kalnokta > span:last-child { display: flex; gap: 4px; white-space: nowrap; }
+.kal-ref { font-size: 12.5px; }
+@media (max-width: 480px) {
+  .kalnokta { grid-template-columns: 14px 1fr 1fr 1fr; }       /* dar ekranda düğmeler alt satıra */
+  .kalnokta > span:last-child { grid-column: 2 / -1; }
+}
+.kal-ref small { display: block; color: var(--muted); font-size: 12px; margin-top: 2px; }
+details[open] > summary { margin-bottom: 6px; }
+.prog { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; max-height: 300px; overflow-y: auto; }
+.prog li { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: 6px; align-items: center; font-size: 12.5px; padding: 4px 5px; border: 1px solid var(--line); border-radius: 3px; }
+.prog li.aktif { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, transparent); }
+.prog li.hata { border-color: var(--bad); }
+.prog .no { font: 12px var(--f-mono); color: var(--muted); text-align: right; }
+.prog .alan { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; min-width: 0; }
+.prog .alan b { font-weight: 600; min-width: 46px; }
+.prog .alan input { width: 52px; padding: 2px 4px; }
+.prog .ik { display: flex; gap: 2px; }
+.prog .ik button { padding: 2px 6px; font-size: 12px; }
+@media (max-width: 880px) {
+  #p-sim, #p-kam { grid-template-columns: minmax(0, 1fr); }
+  #p-kam { grid-auto-rows: max-content; }                       /* görüntü satırı içerik boyunun altına sıkışmasın */
+  .view { height: 55vh; min-height: 300px; }
+  aside { overflow: visible; }
+}
+</style>
+
+<header>
+  <h1>Servo Robot Kol</h1>
+  <span class="sub">3 × MG996R + 3 × SG90 · Arduino Uno · HC-05 · How To Mechatronics mekaniği</span>
+  <nav class="tabs" role="tablist" aria-label="Bölüm">
+    <button class="tab" role="tab" id="t-sim" aria-selected="true" aria-controls="p-sim">Simülasyon</button>
+    <button class="tab" role="tab" id="t-kam" aria-selected="false" aria-controls="p-kam">Kamera</button>
+    <button class="tab" role="tab" id="t-kal" aria-selected="false" aria-controls="p-kal">Kalibrasyon</button>
+    <button class="tab" role="tab" id="t-sema" aria-selected="false" aria-controls="p-sema">Bağlantı</button>
+    <button class="tab" role="tab" id="t-bom" aria-selected="false" aria-controls="p-bom">Parçalar</button>
+  </nav>
+</header>
+
+<div class="pane" id="p-sim" role="tabpanel" aria-labelledby="t-sim">
+  <div class="view"><canvas id="c" aria-label="3B kol: sürükle döndür, tekerlek yakınlaştır"></canvas>
+    <div class="hud" id="hud-sim">Sürükle: döndür · Tekerlek: yakınlaştır · Sağ tık: kaydır</div>
+    <span class="pill mode" id="mode">Simülasyon</span></div>
+  <aside>
+    <section class="card">
+      <h2>Servolar (uygulamadaki gibi)</h2>
+      <div id="sliders" style="display:flex;flex-direction:column;gap:4px"></div>
+      <label class="ctl"><span>Hız (ss)</span><input type="range" id="ss" min="2" max="80" value="20"><span id="ss-v">20</span></label>
+      <div class="row">
+        <button id="b-save">SAVE</button><button class="primary" id="b-run">RUN</button>
+        <button id="b-pause">PAUSE</button><button id="b-reset">RESET</button>
+      </div>
+      <div class="msg" id="m-rec">Kayıtlı poz yok</div>
+      <details class="nasil"><summary>Nasıl çalışır?</summary><p class="note">Arduino kodunun hareketi birebir (aynı hesap, test edildi): eklemler yavaş kalkıp yavaş durur, birlikte gönderilen eklemler aynı anda varır. RUN kayıtlı pozları döngüde oynatır; "ss" oynatma hızıdır (1° başına ms). Kayıtlar Arduino'da EEPROM'da, burada tarayıcıda saklanır: sayfayı kapatınca silinmez.</p></details>
+    </section>
+    <section class="card">
+      <h2>Gerçek kol (USB)</h2>
+      <div class="row"><button class="primary" id="b-baglan">Kola bağlan</button><span class="pill" id="baglanti">bağlı değil</span></div>
+      <div class="msg" id="m-usb"></div>
+      <p class="note">Chrome ya da Edge'de, sayfa bilgisayardaki dosyadan açılınca çalışır.</p>
+      <details class="nasil"><summary>Nasıl çalışır?</summary><p class="note">Arduino'yu USB ile bağla, düğmeye bas ve portu seç. Bağlıyken bu sayfadaki her kaydırıcı, düğme ve "Git" kola gider, 3B model de kolun gerçek konumunu gösterir: telefonla oynatsan bile ekrandaki kol onu takip eder. Chrome ya da Edge (masaüstü) gerekir. Port açılınca Arduino yeniden başlar ve kol açılış pozuna gider.</p></details>
+    </section>
+    <section class="card">
+      <h2>Ucu sür (ters kinematik)</h2>
+      <div class="grid4">
+        <label>X mm<input type="number" id="ix" value="180" step="5"></label>
+        <label>Y mm<input type="number" id="iy" value="60" step="5"></label>
+        <label>Z mm<input type="number" id="iz" value="40" step="5"></label>
+        <label>Alet°<input type="number" id="ia" value="180" step="5"></label>
+      </div>
+      <div class="jog" role="group" aria-label="Ucu adım adım sür">
+        <button data-ek="x" data-yon="1">X+</button><button data-ek="y" data-yon="1">Y+</button><button data-ek="z" data-yon="1">Z+</button><button data-ek="alet" data-yon="1">Alet+</button>
+        <button data-ek="x" data-yon="-1">X−</button><button data-ek="y" data-yon="-1">Y−</button><button data-ek="z" data-yon="-1">Z−</button><button data-ek="alet" data-yon="-1">Alet−</button>
+      </div>
+      <div class="row">
+        <button class="primary" id="b-ik">Git</button>
+        <label class="adim">Adım <select id="jog-adim"><option value="2">2</option><option value="5">5</option><option value="10" selected>10</option><option value="20">20</option></select> mm · °</label>
+        <button id="b-copy">Komutları kopyala</button>
+      </div>
+      <label class="adim"><input type="checkbox" id="erisim"> Erişim alanını göster (kutulardaki Z ve alet açısında)</label>
+      <div class="msg" id="m-erisim"></div>
+      <div class="msg" id="m-ik"></div>
+      <code class="code" id="cmds">s190s2100s380s490s590s660</code>
+      <p class="note">Klavye: ↑ ↓ ileri/geri (X) · ← → sola/sağa (Y) · Page Up/Down yukarı/aşağı (Z)</p>
+      <details class="nasil"><summary>Nasıl çalışır?</summary><p class="note">Klavye kısayolları bir giriş kutusunda değilken çalışır. Alet açısı dikeyden ölçülür: 180 = dik aşağı, 90 = yatay ileri. "Git" eklemleri birlikte ve 0,1° çözünürlükte götürür (USB komutu "a…GO"). Alttaki satır telefon uygulamasının tam derece komutlarıdır.</p></details>
+    </section>
+    <section class="card">
+      <h2>Program</h2>
+      <ol class="prog" id="prog" aria-label="Program adımları"></ol>
+      <div class="row">
+        <button id="p-uc">+ Şu anki uç</button><button id="p-ac">+ Aç</button><button id="p-kapa">+ Kapa</button><button id="p-bekle">+ Bekle</button>
+      </div>
+      <details>
+        <summary>Al-bırak şablonu</summary>
+        <div class="grid4">
+          <label>Al X<input type="number" id="ab-ax" value="170" step="5"></label>
+          <label>Al Y<input type="number" id="ab-ay" value="-60" step="5"></label>
+          <label>Al Z<input type="number" id="ab-az" value="30" step="5"></label>
+          <label>Yükseklik<input type="number" id="ab-h" value="40" step="5"></label>
+          <label>Bırak X<input type="number" id="ab-bx" value="150" step="5"></label>
+          <label>Bırak Y<input type="number" id="ab-by" value="90" step="5"></label>
+          <label>Bırak Z<input type="number" id="ab-bz" value="30" step="5"></label>
+          <label>&nbsp;<button id="ab-ekle">Ekle</button></label>
+        </div>
+      </details>
+      <div class="row">
+        <button class="primary" id="p-calis">Çalıştır</button><button id="p-dur" disabled>Durdur</button>
+        <label class="adim"><input type="checkbox" id="p-dongu"> Döngü</label>
+        <button id="p-yukle" disabled>Kola yükle</button><button id="p-sil">Temizle</button>
+      </div>
+      <div class="msg" id="m-prog"></div>
+      <details>
+        <summary>Dışa / içe aktar (JSON)</summary>
+        <textarea id="p-json" rows="4" spellcheck="false" aria-label="Program JSON"></textarea>
+        <div class="row"><button id="p-ver">Programı buraya yaz</button><button id="p-al">Buradakini yükle</button></div>
+      </details>
+      <details class="nasil"><summary>Nasıl çalışır?</summary><p class="note">"düz" işaretli adımda uç önceki noktadan düz çizgide gider (5 mm'lik ara noktalar); işaretsizde eklemler birlikte döner ve uç yay çizer. 3B'deki yeşil çizgi ucun gideceği yoldur. Al-bırak şablonunda iniş ve kalkışlar düzdür. Çalıştır: simülasyonda ya da kol bağlıysa gerçek kolda adım adım gider, her adımda kolun varmasını bekler. Kola yükle: pozları kolun EEPROM'una yazar (koldaki eski kayıtlar silinir); kol sonra bilgisayarsız, RUN ile döngüde oynatır. Beklemeler kolda saklanamaz, düz hareketler kolda düz olmaz (yalnız uç noktalar yüklenir). Program bu tarayıcıda saklanır.</p></details>
+    </section>
+    <section class="card">
+      <h2>Yük ve tork</h2>
+      <label class="ctl"><span>Yük</span><input type="range" id="yuk" min="0" max="200" value="50" step="10"><span id="yuk-v">50 g</span></label>
+      <div id="tork" style="display:flex;flex-direction:column;gap:8px"></div>
+      <details class="nasil"><summary>Ne anlama gelir?</summary><p class="note">Statik tork, servonun durma torkuna oranla (MG996R 9,4 kgf·cm @4,8 V; SG90 muhafazakâr 1,2 kgf·cm). %50'nin üstü servoyu ısıtır ve titretir. Orijinal projede omuza lastik takılmasının sebebi bu.</p></details>
+      <dl class="tq" id="tip" style="margin:0"></dl>
+    </section>
+    <p class="note">Ölçüler tahmin: masa→omuz 90, üst kol 120, ön kol 100, bilek→uç 80 mm. STL'ler gelince gerçek ölçülerle güncellenecek.</p>
+  </aside>
+</div>
+
+<div class="pane" id="p-kam" role="tabpanel" aria-labelledby="t-kam" hidden>
+  <div class="kamview" id="kam-view"><canvas id="kam-c" width="640" height="480" aria-label="Kamera görüntüsü; işaretleme ya da renk seçme modunda tıklanır"></canvas>
+    <div class="hud" id="kam-hud">Kamera kapalı</div></div>
+  <aside>
+    <section class="card">
+      <h2>Kamera</h2>
+      <div class="row">
+        <select id="kam-kaynak" aria-label="Kamera kaynağı" style="flex:1;min-width:0">
+          <option value="sanal-egik">Sanal · eğik (laptop)</option>
+          <option value="sanal-tepe">Sanal · tepeden</option>
+        </select>
+        <button class="primary" id="kam-baslat">Başlat</button><button id="kam-durdur" disabled>Durdur</button>
+      </div>
+      <div class="row"><button id="kam-kupler">Sanal küpleri dağıt</button><button id="kam-kup-sil">Küpleri kaldır</button></div>
+      <div class="msg" id="m-kam"></div>
+      <p class="note">Gerçek kamera, sayfa bilgisayardaki dosyadan Chrome ya da Edge ile açılınca listelenir.</p>
+      <details class="nasil"><summary>Nasıl çalışır?</summary><p class="note">Gerçek kamera (laptop ya da USB webcam), bu sayfa bilgisayarda Chrome ya da Edge ile doğrudan açılınca listeye gelir. claude.ai bağlantısında yalnız sanal kamera çalışır. Sanal kamera, Simülasyon sekmesindeki sahneyi gösterir: küpleri dağıt, masayı kalibre et, renkleri seç, ayır.</p></details>
+    </section>
+    <section class="card">
+      <h2>Masa kalibrasyonu</h2>
+      <div id="kal-noktalar" style="display:flex;flex-direction:column;gap:4px"></div>
+      <div class="row"><button class="primary" id="kk-hesapla">Hesapla</button><label class="adim">Kamera yüksekliği <input type="number" id="kk-yuk" value="500" step="10" style="width:64px"> mm</label></div>
+      <div class="row"><button id="kk-oto">Kolla otomatik kalibre et</button><span class="sw" id="kk-bant-sw" title="Uçtaki topun rengi"></span><button id="kk-bant">Top rengini seç</button></div>
+      <div class="msg" id="m-kk"></div>
+      <details class="nasil"><summary>Nasıl çalışır?</summary><p class="note">Masaya dört işaret koy (bant, kâğıt köşesi). Her biri için "İşaretle"ye basıp görüntüde üstüne tıkla ve masadaki yerini yaz (mm, taban merkezinden: X ileri, Y sola). Ölçmek yerine kolun ucunu işarete değdirip "Uç burada" da diyebilirsin. Kamera masaya eğik bakıyorsa konumu kendiliğinden bulunur. Tam tepeden bakıyorsa yüksekliğini elle yaz. Sanal kamerada dört siyah artı hazır.</p><p class="note"><b>Kolla otomatik (eğik bakan kamera için):</b> tutucuyu kapat; kapalı parmak uçlarına bir kürdan ya da tel bantla, ucundaki ~10 mm'lik renkli top (boncuk, oyun hamuru; pembe, mor gibi masada ve nesnelerde olmayan bir renk) parmak uçlarından 15 mm aşağıda kalacak şekilde tuttur. Top olsun: görünen merkezi bakış açısıyla kaymaz. 15 mm aşağıda olsun: parmaklar onu örtmesin. Başlamadan masayı boşalt: nesneler topu örtebilir. Tam tepeden bakan kamerada top kolun altında kalır, orada elle yöntemi kullan. "Top rengini seç"e basıp görüntüde topa tıkla, sonra "Kolla otomatik kalibre et"; kol kalibrasyon boyunca tutucuyu kapalı tutar. Kol ucu masanın 10 mm üstünde 8 noktaya götürür, kamera bandı bulur; işaret koymak ve ölçmek gerekmez. Kamera koordinatları doğrudan kolun kendi koordinatlarına bağlanır, ama önce Kalibrasyon sekmesindeki montaj kalibrasyonu yapılmış olmalı. Sanal kolun ucunda pembe top hazır.</p></details>
+    </section>
+    <section class="card">
+      <h2>Renkler ve kutular</h2>
+      <div id="renkler" style="display:flex;flex-direction:column;gap:4px"></div>
+      <div class="row"><button id="r-ekle">+ Renk</button><button id="r-hazir">Hazır: kırmızı, yeşil, sarı</button></div>
+      <details class="nasil"><summary>Nasıl çalışır?</summary><p class="note">"Seç"e basıp görüntüde o renkteki nesneye tıkla. X/Y: o rengin bırakılacağı yer (mm); kırmızı çerçeve, kolun oraya erişemediği demek. Kolun mavisini ya da masayı seçme.</p></details>
+    </section>
+    <section class="card">
+      <h2>Nesneler</h2>
+      <div class="row"><label class="adim">Nesne yüksekliği <input type="number" id="n-yuk" value="20" step="1" style="width:56px"> mm</label>
+        <label class="adim"><input type="checkbox" id="n-canli" checked> Canlı göster</label></div>
+      <ul class="nesne-liste" id="n-liste" aria-label="Bulunan nesneler"></ul>
+      <div class="row"><button id="n-tara">Tara</button><button class="primary" id="n-ayir">Renge göre ayır</button><button id="n-dur" disabled>Durdur</button></div>
+      <div class="msg" id="m-ayir"></div>
+      <details class="nasil"><summary>Nasıl çalışır?</summary><p class="note">Ayır: kol açılış pozuna çekilip masayı tarar, erişebildiği bir nesneyi alır ve renginin kutusuna bırakır; nesne kalmayana dek tekrarlar. Yükseklik, eğik bakışta nesnenin tabanını bulmak için kullanılır. Bilek, nesnenin uzun kenarına dik kavrayacak şekilde döner. Halkanın dışındaki nesneye eğik tutucuyla uzanmayı dener.</p></details>
+    </section>
+  </aside>
+</div>
+
+<div class="pane doc" id="p-kal" role="tabpanel" aria-labelledby="t-kal" hidden>
+  <section class="card">
+    <h2>Montajdan önce: servoları ortala</h2>
+    <p class="note">Servo kolları (beyaz plastik başlıklar ya da baskı parçaları) takılmadan önce her servo 90°'de olmalı. Böylece her eklem iki yöne de eşit dönebilir ve aşağıdaki ince ayar küçük kalır. Kol takılıyken bunu yapma; parçalar birbirine çarpabilir.</p>
+    <ol class="note" style="margin:0;padding-left:18px">
+      <li>Kodu Arduino'ya yükle, servoları kablola. Servo kollarını henüz takma.</li>
+      <li>Sayfayı USB ile kola bağla (Simülasyon sekmesi → Gerçek kol) ve aşağıdaki düğmeye bas. Sayfa yoksa Arduino seri monitörüne <code>a1900 a2900 a3900 a4900 a5900 a6900 GO</code> yaz.</li>
+      <li>Servolar dururken kolları referans konumunda tak: gövde ileri, üst kol dik, ön kol üst kolla düz, bilek düz, tutucu yarı açık. Dişliye en yakın oturan konumu seç.</li>
+      <li>Sonra aşağıdaki montaj kalibrasyonuyla kalan birkaç dereceyi düzelt.</li>
+    </ol>
+    <div class="row"><button class="primary" id="k-merkez">Tüm servoları 90°'ye getir</button><span class="msg" id="m-merkez"></span></div>
+  </section>
+  <section class="card">
+    <h2>Montaj kalibrasyonu</h2>
+    <p class="note">Servo kolları dişliye hiçbir zaman tam 90°'de oturmaz; bazı servolar da ters yönde takılabilir. Her eklemde birkaç derecelik kayma, ters kinematikte uçta santimlerce hata demektir. Burada her eklem için <b>ofset</b> (eklem referans konumdayken servonun açısı eksi 90°) ve <b>yön</b> kaydedilir. Ters kinematik, ucu sürme, program ve 3B model bunları kullanır; Arduino kodu değişmez. Değerler bu tarayıcıda saklanır.</p>
+    <ol class="note" style="margin:0;padding-left:18px">
+      <li>Kolu USB ile bağla (Simülasyon sekmesi → Gerçek kol). Bağlı değilken kaydırıcılar simülasyondaki kolu oynatır, deneme için.</li>
+      <li>Her satırda kaydırıcı ya da ±0,5 / ±5 düğmeleriyle servoyu oynat. Eklem "Referans" sütunundaki konuma gelince <b>Burası</b>'ya bas.</li>
+      <li>Yön: +5'e bas. Eklem "Açı artınca" sütunundaki yöne gitmiyorsa yönü −1 yap.</li>
+      <li>Kontrol: <b>Referans pozuna git</b>. Kol dik yukarı, düz ve ileri bakıyor olmalı.</li>
+    </ol>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Eklem</th><th>Referans konumu (eklem 0°)</th><th>Servo</th><th></th><th class="num">Ofset</th><th>Yön</th></tr></thead>
+      <tbody id="kal-body"></tbody>
+    </table></div>
+    <div class="row"><button class="primary" id="k-ref">Referans pozuna git</button><button id="k-sifirla">Varsayılana dön</button></div>
+    <div class="msg" id="m-kal"></div>
+    <details>
+      <summary>Dışa / içe aktar (Python, ROS, başka tarayıcı)</summary>
+      <textarea id="k-json" rows="3" spellcheck="false" aria-label="Kalibrasyon JSON"></textarea>
+      <div class="row"><button id="k-ver">Kalibrasyonu buraya yaz</button><button id="k-kopyala">Kopyala</button><button id="k-al">Buradakini yükle</button></div>
+      <p class="note">Python istemcisi ve URDF için bu metni <code>pc/kalibrasyon.json</code> olarak kaydet: <code>Kol.ac("COM5", kalibrasyon="kalibrasyon.json")</code>, <code>python urdf_uret.py --kalibrasyon ../pc/kalibrasyon.json</code>.</p>
+    </details>
+  </section>
+  <section class="card">
+    <h2>Tutucu</h2>
+    <p class="note">Açık: parmaklar tam açık ama servo dayanmıyor. Kapalı: tutacağın nesneyi sıkıca kavrıyor ama servo vızıldamıyor (vızıldıyorsa zorlanıyor, ısınır). Programdaki "+ Aç", "+ Kapa" ve al-bırak şablonu bu değerleri kullanır.</p>
+    <div class="row" id="kal-tut"></div>
+  </section>
+</div>
+
+<div class="pane doc" id="p-sema" role="tabpanel" aria-labelledby="t-sema" hidden>
+  <section class="card">
+    <h2>Bağlantı şeması</h2>
+    <div class="tbl-wrap"><svg id="sema" viewBox="0 0 980 520" width="100%" style="max-width:980px;min-width:640px" role="img" aria-label="Arduino, servolar, HC-05 ve 5 V adaptör bağlantı şeması"></svg></div>
+    <p class="note">Servoları asla Arduino'nun 5 V pininden besleme: MG996R tek başına 2,5 A'e kadar çekebiliyor (veri sayfası, 6 V durma akımı). Servolar ayrı 5 V adaptörden beslenir; adaptörün GND'si Arduino GND'sine bağlanmalı, yoksa servolar sinyali anlamaz.</p>
+  </section>
+  <section class="card">
+    <h2>Pin tablosu</h2>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Arduino</th><th>Bağlanan</th><th>Not</th></tr></thead>
+      <tbody>
+        <tr><td><code>D5</code></td><td>Servo 1 – gövde (MG996R) sinyal</td><td>Turuncu/sarı kablo</td></tr>
+        <tr><td><code>D6</code></td><td>Servo 2 – omuz (MG996R)</td><td>En çok yüklenen eklem</td></tr>
+        <tr><td><code>D7</code></td><td>Servo 3 – dirsek (MG996R)</td><td></td></tr>
+        <tr><td><code>D8</code></td><td>Servo 4 – bilek dönüş (SG90)</td><td></td></tr>
+        <tr><td><code>D9</code></td><td>Servo 5 – bilek eğim (SG90)</td><td></td></tr>
+        <tr><td><code>D10</code></td><td>Servo 6 – tutucu (SG90)</td><td>Kapanma sınırını kodda ayarla</td></tr>
+        <tr><td><code>D3</code></td><td>HC-05 TX</td><td>Doğrudan</td></tr>
+        <tr><td><code>D4</code></td><td>HC-05 RX</td><td>1 kΩ / 2 kΩ bölücü ile (HC-05 RX 3,3 V)</td></tr>
+        <tr><td><code>5V</code>, <code>GND</code></td><td>HC-05 VCC, GND</td><td>HC-05 Arduino'dan beslenebilir</td></tr>
+        <tr><td><code>GND</code></td><td>Servo adaptörü GND</td><td>Ortak toprak şart</td></tr>
+      </tbody></table></div>
+  </section>
+</div>
+
+<div class="pane doc" id="p-bom" role="tabpanel" aria-labelledby="t-bom" hidden>
+  <section class="card">
+    <h2>Parça listesi (2026-10-19, KDV dahil)</h2>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Parça</th><th>Adet</th><th>Birim</th><th>Toplam</th><th>Nereden</th></tr></thead>
+      <tbody id="bom-body"></tbody>
+      <tfoot><tr><td colspan="3">Toplam (baskı hizmeti 0,25–6 TL/g aralığında)</td><td class="num" id="bom-top"></td><td></td></tr></tfoot>
+    </table></div>
+    <p class="note">Fiyatlar arama anındaki satıcı sayfalarından; stok ve fiyat değişebilir. "Tahmin" yazanlar doğrulanmadı. 3D model Cults3D'de 2,85 $ ve kişisel kullanım lisanslı görünüyor; satın alma ve indirme sende.</p>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+__KINEMATIK__
+</script>
+<script>
+__HAREKET__
+</script>
+<script>
+__PROGRAM__
+</script>
+<script>
+__KAMERA__
+</script>
+<script>
+(function () {
+  "use strict";
+  const S = window.ServoKol, O = S.olcu(), R = Math.PI / 180;
+  const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+  const fmt = (x, d = 0) => x.toFixed(d).replace(".", ",").replace("-", "−");
+  const ADLAR = ["Gövde", "Omuz", "Dirsek", "Bilek dönüş", "Bilek eğim", "Tutucu"];
+  const EV = [90, 100, 80, 90, 90, 60];
+  // Montaj kalibrasyonu (Kalibrasyon sekmesi): yön/ofset kinematiğe, tutucu açık/kapalı programa
+  const kal = { yon: [1, 1, 1, 1, 1], ofset: [0, 0, 0, 0, 0], acik: window.ServoProgram.ACIK, kapali: window.ServoProgram.KAPALI };
+  try {
+    const k = JSON.parse(localStorage.getItem("servokol-kalibrasyon") || "null");
+    if (k) {
+      Object.assign(kal, S.kalibrasyon(k));
+      if (Number.isFinite(+k.acik)) kal.acik = +k.acik;
+      if (Number.isFinite(+k.kapali)) kal.kapali = +k.kapali;
+    }
+  } catch (e) {}
+
+  const $ = (id) => document.getElementById(id);
+
+  // ------------------------------------------------ Arduino Kol mantığı (servo_hareket.js = komut.h, bit bit aynı)
+  const H = window.ServoHareket;
+  // EEPROM yerine tarayıcı deposu: kayıtlar sayfa kapanınca da durur (depo kapalıysa yalnız bu oturum)
+  const mem = new Uint8Array(1024).fill(0xff);
+  try { const k = localStorage.getItem("servokol-eeprom"); if (k && k.length === 2048) for (let i = 0; i < 1024; i++) mem[i] = parseInt(k.substr(2 * i, 2), 16); } catch (e) {}
+  let depoZaman = 0;
+  const depo = {
+    oku: (a) => mem[a],
+    yaz: (a, v) => {
+      mem[a] = v; clearTimeout(depoZaman);
+      depoZaman = setTimeout(() => { try { localStorage.setItem("servokol-eeprom", Array.from(mem, (b) => b.toString(16).padStart(2, "0")).join("")); } catch (e) {} }, 200);
+    },
+  };
+  const kol = new H.Kol(EV, S.SERVO_MIN, S.SERVO_MAX, depo);
+
+  const mRec = $("m-rec");
+  const recMsg = (t, cls = "") => { mRec.textContent = t; mRec.className = "msg " + cls; };
+  const MESAJ = { 1: ["Oynatma sürüyor, önce PAUSE", "bad"], 2: ["Kayıt dolu (50 poz)", "bad"], 3: ["Poz kaydedildi", "ok"],
+                  4: ["Kayıtlı poz yok", "bad"], 5: ["Oynatılıyor", "ok"], 6: ["Duraklatıldı", ""], 7: ["Kayıtlar silindi", ""] };
+  function bildir(kod) {
+    const m = MESAJ[kod]; if (!m) return;
+    recMsg(m[0] + (kod === 3 || kod === 5 ? ` · ${kol.pozSayisi} poz` : ""), m[1]);
+  }
+  recMsg(kol.pozSayisi ? `Tarayıcıda kayıtlı ${kol.pozSayisi} poz` : "Kayıtlı poz yok");
+
+  // Komut: kol bağlıysa USB'ye metin olarak (komut.h ayrıştırır), değilse simülasyona
+  const METIN = { SERVO: (s, d) => `s${s + 1}${d}`, HIZ: (s, d) => `ss${d}`, KAYDET: () => "SAVE", OYNAT: () => "RUN",
+                  DURAKLAT: () => "PAUSE", SIFIRLA: () => "RESET", INCE: (s, d) => `a${s + 1}${d}`, GIT: () => "GO" };
+  function komut(tip, servo = 0, deger = 0) {
+    if (usb.bagli) {
+      // Kolun hedefini burada izle (kol yalnız konumunu bildirir): ucu sürme ve program buradan başlar
+      if (!usb.hedef && usb.konum) usb.hedef = usb.konum.map((v) => Math.round(v * 10));
+      if (tip === "SERVO" && usb.hedef) usb.hedef[servo] = kol.sinirla(servo, deger * 10);
+      else if (tip === "INCE") usb.hazirlanan[servo] = kol.sinirla(servo, deger);
+      else if (tip === "GIT") { if (usb.hedef) for (const k in usb.hazirlanan) usb.hedef[k] = usb.hazirlanan[k]; usb.hazirlanan = {}; }
+      else if (tip === "OYNAT" || tip === "DURAKLAT" || tip === "SIFIRLA") usb.hedef = null;
+      return tip === "SERVO" ? servoGonder(servo, deger) : usbYaz(METIN[tip](servo, deger));
+    }
+    bildir(kol.uygula({ tip, servo, deger }));
+  }
+  // Kolun şu anki hedefi (onda bir derece): ucu sürme ve programın başlangıcı
+  function hedefOnda() {
+    if (!usb.bagli) return kol.hedef.slice();
+    if (usb.hedef && !usb.oynuyor) return usb.hedef.slice();
+    return (usb.konum || EV).map((v) => Math.round(v * 10));
+  }
+  const prog = { calisiyor: false, dur: false, aktif: -1, onay: 0 };
+  const oynuyor = () => (usb.bagli ? usb.oynuyor : kol.oynuyor);
+  // Program ya da kamerayla ayırma kolu sürerken kayıt düğmeleri kilitli; PAUSE onları durdurur
+  const mesgul = () => { if (!prog.calisiyor) return false; recMsg("Program ya da ayırma çalışıyor; önce Durdur (ya da PAUSE)", "bad"); return true; };
+  $("b-save").onclick = () => { if (!mesgul()) komut("KAYDET"); };
+  $("b-run").onclick = () => { if (!mesgul()) komut("OYNAT"); };
+  $("b-pause").onclick = () => {
+    if (prog.calisiyor) { prog.dur = true; if (window.servoKol.kamera) window.servoKol.kamera.kamS.ayir.dur = true; recMsg("Durduruluyor…"); return; }
+    komut("DURAKLAT");
+  };
+  $("b-reset").onclick = () => { if (!mesgul()) komut("SIFIRLA"); };
+  const ss = $("ss");
+  ss.oninput = () => { $("ss-v").textContent = ss.value; komut("HIZ", 0, +ss.value); };
+
+  const sl = $("sliders");
+  ADLAR.forEach((ad, i) => {
+    const l = document.createElement("label"); l.className = "ctl";
+    l.innerHTML = `<span>s${i + 1} ${ad}</span><input type="range" id="s${i}" min="${S.SERVO_MIN[i]}" max="${S.SERVO_MAX[i]}" value="${EV[i]}"><span id="sv${i}">${EV[i]}°</span>`;
+    l.querySelector("input").addEventListener("input", (e) => {
+      if (oynuyor()) { recMsg("Oynatma sürüyor, önce PAUSE", "bad"); return; }
+      if (mesgul()) return;
+      komut("SERVO", i, +e.target.value);
+    });
+    sl.appendChild(l);
+  });
+
+  // ------------------------------------------------ gerçek kol: Web Serial (USB, 115200)
+  // Gönderilen: komut.h komutları. Alınan: 40 ms'de bir "?" sorgusuna "@ a1..a6 | poz n | oynuyor 0/1 | ss ms" (onda bir derece)
+  const usb = { bagli: false, hazir: false, port: null, yazici: null, okuyucu: null, okuma: null, sorgu: 0, hazirZaman: 0,
+                konum: null, oynuyor: false, pozSayisi: 0, kuyruk: [], bekleyen: {}, servoZaman: 0,
+                hedef: null, hazirlanan: {}, dinleyici: [] };
+  const enc = new TextEncoder();
+  const bBag = $("b-baglan"), mUsb = $("m-usb");
+  const usbMsg = (t, cls = "") => { mUsb.textContent = t; mUsb.className = "msg " + cls; };
+  const GOMULU = "Bu sayfa başka bir sayfanın içinde açıldığı için USB'ye erişemiyor. Kola bağlanmak için projedeki sim/servo-kol.html dosyasını Chrome ya da Edge ile doğrudan aç.";
+  const fp = document.featurePolicy;
+  if (!("serial" in navigator)) { bBag.disabled = true; usbMsg("Bu tarayıcı USB seri portu desteklemiyor: bilgisayarda Chrome ya da Edge kullan.", "bad"); }
+  else if (fp && fp.allowsFeature && !fp.allowsFeature("serial")) { bBag.disabled = true; usbMsg(GOMULU, "bad"); }
+
+  function arayuz() {
+    bBag.textContent = usb.bagli ? "Bağlantıyı kes" : "Kola bağlan";
+    const pill = $("baglanti"), mode = $("mode");
+    pill.textContent = usb.bagli ? (usb.hazir ? "bağlı" : "açılıyor…") : "bağlı değil";
+    pill.className = "pill" + (usb.bagli && usb.hazir ? " on" : "");
+    mode.textContent = usb.bagli ? "Gerçek kol" : "Simülasyon"; mode.className = "pill mode" + (usb.bagli ? " on" : "");
+    dugmeler();
+  }
+  function usbHam(t) { if (usb.yazici) usb.yazici.write(enc.encode(t + "\n")).catch(() => {}); }
+  function usbYaz(t) { if (usb.hazir) usbHam(t); else if (usb.kuyruk.length < 20) usb.kuyruk.push(t); }
+  // Kaydırıcı sürüklenirken 30 ms'de bir, servo başına son değer (uygulama da böyle akıtır)
+  function servoGonder(i, d) {
+    usb.bekleyen[i] = d;
+    if (usb.servoZaman) return;
+    usb.servoZaman = setTimeout(() => {
+      usb.servoZaman = 0; const b = usb.bekleyen; usb.bekleyen = {};
+      usbYaz(Object.keys(b).map((k) => `s${+k + 1}${b[k]}`).join("\n"));
+    }, 30);
+  }
+  function hazirOl() {
+    if (usb.hazir || !usb.bagli) return;
+    usb.hazir = true; clearTimeout(usb.hazirZaman);
+    usb.kuyruk.splice(0).forEach(usbHam);
+    arayuz(); usbMsg("Kol hazır: kontroller artık gerçek kola gidiyor", "ok");
+  }
+  function satir(l) {
+    if (!l) return;
+    if (l[0] === "@") {
+      const m = l.match(/^@((?:\s+-?\d+){6})(?:.*?poz\s+(\d+))?(?:.*?oynuyor\s+(\d))?/);
+      if (!m) return;
+      usb.konum = m[1].trim().split(/\s+/).map((x) => +x / 10);
+      if (m[2] !== undefined) usb.pozSayisi = +m[2];
+      if (m[3] !== undefined) { usb.oynuyor = m[3] === "1"; if (usb.oynuyor) usb.hedef = null; }
+      hazirOl(); return;
+    }
+    for (const d of usb.dinleyici.slice()) if (d.re.test(l)) { clearTimeout(d.t); usb.dinleyici.splice(usb.dinleyici.indexOf(d), 1); d.res(l); }
+    if (/hazir/i.test(l)) { hazirOl(); return; }                        // Arduino açılış satırı
+    recMsg("Arduino: " + l, /dolu|yok|once/i.test(l) ? "bad" : "ok");
+  }
+  async function oku(port) {
+    const dec = new TextDecoder(); let tampon = "";
+    while (usb.bagli && port.readable) {
+      const r = (usb.okuyucu = port.readable.getReader());
+      let bitti = false;
+      try {
+        for (;;) {
+          const { value, done } = await r.read();
+          if (done) { bitti = true; break; }
+          tampon += dec.decode(value, { stream: true });
+          let i;
+          while ((i = tampon.indexOf("\n")) >= 0) { satir(tampon.slice(0, i).trim()); tampon = tampon.slice(i + 1); }
+          if (tampon.length > 500) tampon = "";
+        }
+      } catch (e) { bitti = true; }                                       // port koptu
+      finally { r.releaseLock(); usb.okuyucu = null; }
+      if (bitti) break;
+    }
+  }
+  async function baglan() {
+    let port;
+    try { port = await navigator.serial.requestPort(); }
+    catch (e) { usbMsg(e.name === "SecurityError" ? GOMULU : "Port seçilmedi.", e.name === "SecurityError" ? "bad" : ""); return; }
+    try { await port.open({ baudRate: 115200 }); }
+    catch (e) { usbMsg("Port açılamadı: Arduino IDE'nin seri monitörü ya da başka bir program portu kullanıyor olabilir.", "bad"); return; }
+    Object.assign(usb, { port, yazici: port.writable.getWriter(), bagli: true, hazir: false, konum: null, kuyruk: [], bekleyen: {}, hedef: null, hazirlanan: {} });
+    arayuz(); usbMsg("Bağlandı, Arduino yeniden başlıyor…");
+    usb.hazirZaman = setTimeout(hazirOl, 3000);                          // açılış satırı kaçarsa
+    usb.sorgu = setInterval(() => { if (usb.hazir) usb.yazici.write(enc.encode("?")).catch(() => {}); }, 40);   // 25 Hz: düz yolun ara noktaları için
+    usb.okuma = oku(port).then(() => { if (usb.bagli && usb.port === port) kes("Bağlantı koptu", "bad"); });
+  }
+  async function kes(msg = "Bağlantı kesildi", cls = "") {
+    if (!usb.port) return;
+    const port = usb.port; usb.port = null;
+    usb.bagli = usb.hazir = false; clearInterval(usb.sorgu); clearTimeout(usb.hazirZaman); clearTimeout(usb.servoZaman); usb.servoZaman = 0;
+    try { if (usb.okuyucu) await usb.okuyucu.cancel(); } catch (e) {}
+    try { await usb.okuma; } catch (e) {}
+    try { usb.yazici.releaseLock(); } catch (e) {}
+    try { await port.close(); } catch (e) {}
+    usb.yazici = null; usb.konum = null; usb.hedef = null;
+    arayuz(); usbMsg(msg, cls);
+  }
+  bBag.onclick = () => (usb.bagli ? kes() : baglan());
+  window.servoKol = { kol, usb, prog, kal };   // tarayıcı konsolundan inceleme için
+  if ("serial" in navigator) navigator.serial.addEventListener("disconnect", (e) => { if (e.target === usb.port) kes("Kablo çıkarıldı", "bad"); });
+
+  // ------------------------------------------------ 3B sahne
+  const canvas = document.getElementById("c");
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  const scene = new THREE.Scene();
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x8899aa, 0.9));
+  const dl = new THREE.DirectionalLight(0xffffff, 0.7); dl.position.set(300, 500, 300); scene.add(dl);
+  const cam = new THREE.PerspectiveCamera(35, 1, 1, 5000); cam.position.set(720, 520, 640);
+  if (matchMedia("(pointer: coarse)").matches) $("hud-sim").textContent = "Sürükle: döndür · İki parmak: yakınlaştır ve kaydır";
+  const ctl = new THREE.OrbitControls(cam, canvas); ctl.target.set(110, 165, 20); ctl.enableDamping = true;
+  const grid = new THREE.GridHelper(600, 12); scene.add(grid);
+  function theme() { scene.background = new THREE.Color(css("--view")); grid.material.color.set(css("--grid")); }
+
+  const M = (c) => new THREE.MeshStandardMaterial({ color: c, metalness: 0.1, roughness: 0.55 });
+  const MAVI = M(0x1f5fbf), GRI = M(0xb9c1c7), SIYAH = M(0x262a2e), BEYAZ = M(0xf0f0f0), TURUNCU = M(0xd9661a);
+  const box = (x, y, z, m) => new THREE.Mesh(new THREE.BoxGeometry(x, y, z), m);
+  const cyl = (r, h, m) => { const g = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 40), m); return g; };
+  // Kol kökü: z yukarı, birim mm
+  const root = new THREE.Group(); root.rotation.x = -Math.PI / 2; scene.add(root);
+  const mm = (m) => m * 1000;
+  // Taban (sabit)
+  const taban = cyl(55, 60, GRI); taban.rotation.x = Math.PI / 2; taban.position.z = 30; root.add(taban);
+  const flans = cyl(70, 5, GRI); flans.rotation.x = Math.PI / 2; flans.position.z = 2.5; root.add(flans);
+  // J1: gövde
+  const j1 = new THREE.Group(); j1.position.z = 60; root.add(j1);
+  const tabla = cyl(48, 10, MAVI); tabla.rotation.x = Math.PI / 2; tabla.position.z = 5; j1.add(tabla);
+  const omuzBlok = box(40, 56, mm(O.H0) - 70, MAVI); omuzBlok.position.z = 10 + (mm(O.H0) - 70) / 2; j1.add(omuzBlok);
+  // J2: omuz (dikey düzlem x-z; y ekseni etrafında döner)
+  const j2 = new THREE.Group(); j2.position.z = mm(O.H0) - 60; j1.add(j2);
+  const s2 = box(40, 20, 38, SIYAH); s2.position.set(0, 30, 0); j2.add(s2);
+  const ust = box(26, 18, mm(O.L2)); ust.material = MAVI; ust.position.z = mm(O.L2) / 2; j2.add(ust);
+  // J3: dirsek
+  const j3 = new THREE.Group(); j3.position.z = mm(O.L2); j2.add(j3);
+  const s3 = box(40, 20, 38, SIYAH); s3.position.set(0, -26, 0); j3.add(s3);
+  const on = box(24, 16, mm(O.L3), MAVI); on.position.z = mm(O.L3) / 2; j3.add(on);
+  // J5: bilek eğim (+ J4 dönüş aletin kendi ekseninde)
+  const j5 = new THREE.Group(); j5.position.z = mm(O.L3); j3.add(j5);
+  const s5 = box(23, 12, 22, SIYAH); s5.position.set(0, 16, 0); j5.add(s5);
+  const j4 = new THREE.Group(); j5.add(j4);
+  const bilek = box(22, 22, 24, MAVI); bilek.position.z = 12; j4.add(bilek);
+  const s4 = box(12, 23, 22, SIYAH); s4.position.set(-16, 0, 12); j4.add(s4);
+  const tutBaz = box(46, 14, 12, BEYAZ); tutBaz.position.z = 30; j4.add(tutBaz);
+  const p1 = box(6, 12, mm(O.L4) - 36, BEYAZ), p2 = box(6, 12, mm(O.L4) - 36, BEYAZ);
+  p1.position.z = p2.position.z = 36 + (mm(O.L4) - 36) / 2; j4.add(p1); j4.add(p2);
+  const uc = new THREE.Mesh(new THREE.SphereGeometry(4, 16, 12), TURUNCU); uc.position.z = mm(O.L4); j4.add(uc);
+  // Sanal kamerada kapalı parmak uçlarından kısa bir çubukla sarkan 10 mm'lik renkli top (merkezi ucun TOP_UZAK mm
+  // ötesinde). Küre olduğu için görünen merkezi bakış açısına bağlı değil; parmaklardan uzak olduğu için örtülmez.
+  const TOP_UZAK = 15;
+  const bant = new THREE.Mesh(new THREE.SphereGeometry(5, 20, 14), new THREE.MeshStandardMaterial({ color: 0xd63384, roughness: 0.6 }));
+  bant.position.z = mm(O.L4) + TOP_UZAK; bant.visible = false; j4.add(bant);
+  const cubuk = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, TOP_UZAK, 8), new THREE.MeshStandardMaterial({ color: 0xc8b48a }));
+  cubuk.rotation.x = Math.PI / 2; cubuk.position.z = mm(O.L4) + TOP_UZAK / 2; cubuk.visible = false; j4.add(cubuk);
+  const hedefIsaret = new THREE.Mesh(new THREE.SphereGeometry(6, 16, 12), new THREE.MeshBasicMaterial({ color: 0x1f5fbf, transparent: true, opacity: 0.5 }));
+  hedefIsaret.visible = false; root.add(hedefIsaret);
+
+  // Çizilecek konum: bağlıysa kolun bildirdiği, değilse simülasyon (derece)
+  const gosterilen = () => (usb.bagli && usb.konum ? usb.konum : kol.p);
+  const parmak = (a5) => 4 + 16 * (a5 - S.SERVO_MIN[5]) / (S.SERVO_MAX[5] - S.SERVO_MIN[5]);   // çene yarı açıklığı, mm
+  function eklemCiz() {
+    const a = gosterilen();
+    const q = S.eklemAci(a);   // kalibrasyona göre (yön, ofset)
+    j1.rotation.z = q[0] * R; j2.rotation.y = q[1] * R; j3.rotation.y = q[2] * R; j5.rotation.y = q[4] * R; j4.rotation.z = q[3] * R;
+    let ar = parmak(a[5]);
+    const t = kupler.find((k) => k.tutulan);
+    if (t) ar = Math.max(ar, t.k / 2);                                  // tutulan küpün içine girmesin
+    p1.position.x = -ar; p2.position.x = ar;
+    return a;
+  }
+  function poz() {
+    const a = eklemCiz();
+    const q = S.eklemAci(a);
+    const hedefDer = usb.bagli ? a.map(Math.round) : kol.hedef.map((h) => h / 10);
+    for (let i = 0; i < 6; i++) {
+      const s = $("s" + i); if (document.activeElement !== s) s.value = hedefDer[i];
+      $("sv" + i).textContent = fmt(a[i]) + "°";
+    }
+    $("cmds").textContent = hedefDer.map((v, i) => `s${i + 1}${Math.round(v)}`).join("");
+    // tork + uç
+    const yuk = +$("yuk").value / 1000;
+    const t = S.tork(q, yuk, O), cap = [S.KAPASITE.J2, S.KAPASITE.J3, S.KAPASITE.J5];
+    $("tork").innerHTML = [["Omuz (MG996R)", 0], ["Dirsek (MG996R)", 1], ["Bilek eğim (SG90)", 2]].map(([n, k]) => {
+      const r = t[k] / cap[k], cls = r < 0.5 ? "" : r <= 0.8 ? "warn" : "bad";
+      return `<div><div class="tq"><span>${n}</span><span>${fmt(t[k], 2)} Nm · %${fmt(r * 100)}</span></div><div class="bar ${cls}"><i style="width:${Math.min(100, r * 100).toFixed(1)}%"></i></div></div>`;
+    }).join("");
+    const P = S.fk(q, O).noktalar[4];
+    $("tip").innerHTML = `<span>Uç: X ${fmt(P[0] * 1000)} · Y ${fmt(P[1] * 1000)} · Z ${fmt(P[2] * 1000)} mm</span>`;
+  }
+  document.getElementById("yuk").oninput = (e) => { document.getElementById("yuk-v").textContent = e.target.value + " g"; };
+
+  // Ters kinematik: kutulardaki hedefe git
+  const mIk = $("m-ik");
+  const ikMsg = (t, cls = "") => { mIk.textContent = t; mIk.className = "msg " + cls; };
+  function ikGit() {
+    if (oynuyor()) { ikMsg("Oynatma sürüyor, önce PAUSE", "bad"); return false; }
+    if (prog.calisiyor) { ikMsg("Program çalışıyor, önce Durdur", "bad"); return false; }
+    const xyz = ["ix", "iy", "iz"].map((id) => +$(id).value), a = +$("ia").value;
+    const q = window.ServoProgram.ikCoz(S, O, xyz, a);
+    if (!q) { ikMsg("Bu nokta erişim dışında ya da bir servo sınırını aşıyor. Hedefi yaklaştır ya da alet açısını değiştir.", "bad"); return false; }
+    q[3] = S.eklemAci(hedefOnda().map((v) => v / 10))[3];   // bilek dönüşü olduğu gibi kalsın
+    const onda = S.servoAci(q).map((v, i) => kol.sinirla(i, Math.round(v * 10)));
+    for (let i = 0; i < 5; i++) komut("INCE", i, onda[i]);
+    komut("GIT");
+    hedefIsaret.position.set(xyz[0], xyz[1], xyz[2]); hedefIsaret.visible = true;
+    const P = S.fk(S.eklemAci(onda.map((v) => v / 10)), O).noktalar[4], sapma = Math.hypot(P[0] * 1000 - xyz[0], P[1] * 1000 - xyz[1], P[2] * 1000 - xyz[2]);
+    if ($("erisim").checked) erisimCiz();
+    ikMsg(`Servo açıları: ${onda.slice(0, 5).map((v) => fmt(v / 10, 1)).join(" · ")} · 0,1° adımla uç hedeften ~${fmt(sapma, 1)} mm sapar (servonun kendi boşluğu buna eklenir)`, "ok");
+    return true;
+  }
+  $("b-ik").onclick = ikGit;
+
+  // Erişim alanı: kutulardaki Z ve alet açısında ucun gidebildiği noktalar (5 mm ızgara, kalibrasyon dahil)
+  const ERISIM_M = new THREE.PointsMaterial({ color: 0x2e8b57, size: 4, transparent: true, opacity: 0.5 });
+  let erisim = null;
+  function erisimCiz() {
+    if (erisim) { root.remove(erisim); erisim.geometry.dispose(); erisim = null; }
+    const m = $("m-erisim");
+    if (!$("erisim").checked) { m.textContent = ""; return; }
+    const z = +$("iz").value, a = +$("ia").value, pts = [];
+    let rMin = Infinity, rMax = 0;
+    for (let x = -320; x <= 320; x += 5) for (let y = -320; y <= 320; y += 5) {   // kolun toplam boyu ~300 mm
+      if (!window.ServoProgram.ikCoz(S, O, [x, y, z], a)) continue;
+      pts.push(x, y, z); const r = Math.hypot(x, y); rMin = Math.min(rMin, r); rMax = Math.max(rMax, r);
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.Float32BufferAttribute(pts, 3));
+    erisim = new THREE.Points(g, ERISIM_M); root.add(erisim);
+    m.className = "msg " + (pts.length ? "" : "bad");
+    m.textContent = pts.length ? `Z ${fmt(z)} mm, alet ${fmt(a)}°: uç tabandan yatayda ${fmt(rMin)}–${fmt(rMax)} mm uzağa gidebilir (yeşil alan)`
+                               : `Z ${fmt(z)} mm, alet ${fmt(a)}°: bu yükseklikte bu açıyla hiçbir yere gidilemiyor`;
+  }
+  ["erisim", "iz", "ia"].forEach((id) => $(id).addEventListener("input", erisimCiz));
+  document.getElementById("b-copy").onclick = async () => {
+    const t = document.getElementById("cmds").textContent;
+    try { await navigator.clipboard.writeText(t); ikMsg("Komutlar kopyalandı", "ok"); }
+    catch (e) { const r = document.createRange(); r.selectNodeContents(document.getElementById("cmds")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); ikMsg("Seçildi, Ctrl+C ile kopyala"); }
+  };
+
+  // Ucu sür: kolun şu anki HEDEF ucundan (hareket bitmeden basılsa da birikir) bir adım
+  function ucSimdi() {
+    const h = hedefOnda(), f = S.fk(S.eklemAci(h.map((v) => v / 10)), O), p = f.noktalar[4];
+    return { x: p[0] * 1000, y: p[1] * 1000, z: p[2] * 1000, alet: f.alet };
+  }
+  const yuvarla1 = (v) => Math.round(v * 10) / 10;
+  function sur(ek, yon) {
+    const u = ucSimdi();
+    u[ek] += yon * +$("jog-adim").value;
+    $("ix").value = yuvarla1(u.x); $("iy").value = yuvarla1(u.y); $("iz").value = yuvarla1(u.z); $("ia").value = yuvarla1(u.alet);
+    if (!ikGit() && u.alet < 90 && !oynuyor() && !prog.calisiyor)
+      ikMsg("Kol dik duruyor (açılış pozu), buradan sürülemez. Önce kutulara bir çalışma noktası yaz ve Git'e bas, ör. X 180 · Y 0 · Z 60 · Alet 180.", "bad");
+  }
+  document.querySelectorAll(".jog button").forEach((b) => (b.onclick = () => sur(b.dataset.ek, +b.dataset.yon)));
+  const TUS = { ArrowUp: ["x", 1], ArrowDown: ["x", -1], ArrowLeft: ["y", 1], ArrowRight: ["y", -1], PageUp: ["z", 1], PageDown: ["z", -1] };
+  document.addEventListener("keydown", (e) => {
+    const t = TUS[e.key], el = document.activeElement;
+    if (!t || e.altKey || e.ctrlKey || e.metaKey || $("p-sim").hidden) return;
+    if (el && (/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || el.isContentEditable)) return;
+    e.preventDefault(); sur(t[0], t[1]);
+  });
+
+  // ------------------------------------------------ program (servo_program.js)
+  const PR = window.ServoProgram;
+  const TIPLER = ["git", "tutucu", "bekle"];
+  let program = [];
+  try { const k = JSON.parse(localStorage.getItem("servokol-program") || "[]"); if (Array.isArray(k)) program = k.filter((a) => a && TIPLER.includes(a.tip)); } catch (e) {}
+  const mProg = $("m-prog");
+  const progMsg = (t, cls = "") => { mProg.textContent = t; mProg.className = "msg " + cls; };
+  const progKaydet = () => { try { localStorage.setItem("servokol-program", JSON.stringify(program)); } catch (e) {} };
+  // 3B: programdaki uç noktaları ve aralarındaki yol
+  const yolGrup = new THREE.Group(); root.add(yolGrup);
+  const NOKTA_M = new THREE.MeshBasicMaterial({ color: 0x2e8b57, transparent: true, opacity: 0.75 });
+  const YOL_M = new THREE.LineBasicMaterial({ color: 0x2e8b57 });
+  function yolCiz(hedefler) {
+    while (yolGrup.children.length) { const c = yolGrup.children.pop(); if (c.geometry) c.geometry.dispose(); }
+    program.filter((a) => a.tip === "git").forEach((a) => {
+      const m = new THREE.Mesh(new THREE.SphereGeometry(3.5, 12, 8), NOKTA_M); m.position.set(+a.x, +a.y, +a.z); yolGrup.add(m);
+    });
+    // ucun gerçekten izleyeceği yol (senkron hareket eklem uzayında düz -> uçta yay; "düz" adımlar düz)
+    const pts = PR.yol(hedefler, S, O, hedefOnda()).map(([x, y, z]) => new THREE.Vector3(x, y, z));
+    if (pts.length > 1) yolGrup.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), YOL_M));
+  }
+  const ALANLAR = { git: [["x", "X"], ["y", "Y"], ["z", "Z"], ["alet", "A°"]], tutucu: [["aci", "°"]], bekle: [["ms", "ms"]] };
+  const ADI = { git: "Git", tutucu: "Tutucu", bekle: "Bekle" };
+  function progCiz() {
+    const { hedefler, hatalar } = PR.coz(program, S, O, hedefOnda());
+    const hata = new Map(hatalar.map((h) => [h.i, h.mesaj]));
+    const ol = $("prog"); ol.innerHTML = "";
+    program.forEach((a, i) => {
+      const li = document.createElement("li");
+      li.className = (i === prog.aktif ? "aktif " : "") + (hata.has(i) ? "hata" : "");
+      if (hata.has(i)) li.title = hata.get(i);
+      const alan = ALANLAR[a.tip].map(([k, l]) => `<label class="adim" title="${l}">${a.tip === "git" ? l : ""}<input type="number" data-k="${k}" value="${a[k]}" step="${a.tip === "bekle" ? 100 : 5}" aria-label="${ADI[a.tip]} ${l}">${a.tip === "git" ? "" : l}</label>`).join("");
+      const duz = a.tip === "git" ? `<label class="adim" title="Önceki noktadan düz çizgide git"><input type="checkbox" data-k="dogrusal"${a.dogrusal ? " checked" : ""}>düz</label>` : "";
+      li.innerHTML = `<span class="no">${i + 1}</span><span class="alan"><b>${ADI[a.tip]}</b>${alan}${duz}</span>` +
+        `<span class="ik"><button data-e="yukari" aria-label="Yukarı taşı">↑</button><button data-e="asagi" aria-label="Aşağı taşı">↓</button><button data-e="sil" aria-label="Sil">✕</button></span>`;
+      li.querySelectorAll("input").forEach((inp) => (inp.onchange = () => {
+        program[i][inp.dataset.k] = inp.type === "checkbox" ? inp.checked : +inp.value; progDegisti();
+      }));
+      li.querySelectorAll(".ik button").forEach((b) => (b.onclick = () => {
+        if (prog.calisiyor) return;
+        const e = b.dataset.e, j = e === "yukari" ? i - 1 : i + 1;
+        if (e === "sil") program.splice(i, 1);
+        else if (j >= 0 && j < program.length) [program[i], program[j]] = [program[j], program[i]];
+        progDegisti();
+      }));
+      ol.appendChild(li);
+    });
+    if (!prog.calisiyor) yolCiz(hedefler);   // çalışırken başlangıç değişir, çizilen yol programın başındaki gibi kalsın
+    if (!prog.calisiyor) {
+      if (!program.length) progMsg("Program boş. Kolu bir noktaya sür ve “+ Şu anki uç” ile ekle ya da al-bırak şablonunu kullan.");
+      else if (hatalar.length) progMsg(hatalar[0].mesaj + (hatalar.length > 1 ? ` (+${hatalar.length - 1} hata)` : ""), "bad");
+      else progMsg(`${program.length} adım · kola yüklenirse ${PR.yuklemeKomutlari(PR.coz(program, S, O, hedefOnda()).hedefler).length} poz`);
+    }
+  }
+  const progDegisti = () => { progKaydet(); progCiz(); };
+  function aktifCiz() { $("prog").querySelectorAll("li").forEach((li, i) => li.classList.toggle("aktif", i === prog.aktif)); }
+  function dugmeler() {
+    $("p-calis").disabled = prog.calisiyor; $("p-dur").disabled = !prog.calisiyor;
+    $("p-yukle").disabled = prog.calisiyor || !usb.hazir; $("p-sil").disabled = prog.calisiyor;
+  }
+  const ekle = (...a) => { if (prog.calisiyor) return; program.push(...a); progDegisti(); $("prog").lastElementChild?.scrollIntoView({ block: "nearest" }); };
+  $("p-uc").onclick = () => { const u = ucSimdi(); ekle({ tip: "git", x: yuvarla1(u.x), y: yuvarla1(u.y), z: yuvarla1(u.z), alet: yuvarla1(u.alet) }); };
+  $("p-ac").onclick = () => ekle({ tip: "tutucu", aci: kal.acik });
+  $("p-kapa").onclick = () => ekle({ tip: "tutucu", aci: kal.kapali });
+  $("p-bekle").onclick = () => ekle({ tip: "bekle", ms: 500 });
+  $("ab-ekle").onclick = () => {
+    const v = (id) => +$(id).value;
+    ekle(...PR.alBirak({ x: v("ab-ax"), y: v("ab-ay"), z: v("ab-az") }, { x: v("ab-bx"), y: v("ab-by"), z: v("ab-bz") }, { yukseklik: v("ab-h"), acik: kal.acik, kapali: kal.kapali }));
+  };
+  $("p-sil").onclick = () => {
+    if (!program.length) return;
+    if (Date.now() - prog.onay > 4000) { prog.onay = Date.now(); progMsg(`${program.length} adım silinecek: emin misin? Bir daha bas.`, "bad"); return; }
+    prog.onay = 0; program = []; progDegisti();
+  };
+  $("p-ver").onclick = () => { $("p-json").value = JSON.stringify(program); };
+  $("p-al").onclick = () => {
+    try {
+      const k = JSON.parse($("p-json").value);
+      if (!Array.isArray(k) || !k.every((a) => a && TIPLER.includes(a.tip))) throw new Error("adım listesi değil");
+      if (prog.calisiyor) return;
+      program = k.map((a) => Object.fromEntries(Object.entries(a).map(([x, y]) => [x, x === "tip" || typeof y === "boolean" ? y : +y]))); progDegisti();
+    } catch (e) { progMsg("JSON okunamadı: " + e.message, "bad"); }
+  };
+
+  // Kolu (simülasyon ya da USB) servo_program.calistir'a bağlayan arayüz
+  function kolIo(durdu) {
+    return {
+      git: (onda) => { onda.forEach((v, i) => komut("INCE", i, v)); komut("GIT"); },
+      vardi: (onda) => (usb.bagli ? !!usb.konum && onda.every((v, i) => Math.abs(usb.konum[i] * 10 - v) <= 1)
+                                  : kol.hedefte() && onda.every((v, i) => kol.hedef[i] === v)),
+      yakin: (onda, tol) => {
+        const p = usb.bagli ? usb.konum : kol.p;
+        return !!p && onda.every((v, i) => Math.abs(p[i] * 10 - v) <= tol);
+      },
+      uyku: (ms) => new Promise((r) => setTimeout(r, ms)),
+      simdi: () => performance.now(),
+      durdu,
+    };
+  }
+  async function progCalistir() {
+    if (prog.calisiyor) return;
+    if (oynuyor()) return progMsg("Kayıt oynatılıyor, önce PAUSE", "bad");
+    if (usb.bagli && !usb.hazir) return progMsg("Kol daha hazır değil", "bad");
+    const { hedefler, hatalar } = PR.coz(program, S, O, hedefOnda());
+    if (hatalar.length) return progMsg(hatalar[0].mesaj, "bad");
+    prog.calisiyor = true; prog.dur = false; dugmeler();
+    const io = {
+      ...kolIo(() => prog.dur),
+      dongu: () => $("p-dongu").checked,
+      adim: (i) => { prog.aktif = hedefler[i].adim; aktifCiz(); progMsg(`Çalışıyor${usb.bagli ? " (gerçek kol)" : ""} · adım ${prog.aktif + 1}/${program.length}`, "ok"); },
+    };
+    const r = await PR.calistir(hedefler, io);
+    if (r.durdu) komut("DURAKLAT");   // hareketin ortasındaysa yavaşlayıp dursun
+    prog.calisiyor = false; prog.aktif = -1; aktifCiz(); dugmeler();
+    if (r.bitti) progMsg("Program bitti", "ok");
+    else if (r.durdu) progMsg(`Durduruldu (adım ${hedefler[r.i].adim + 1})`);
+    else progMsg(r.hata, "bad");
+  }
+  $("p-calis").onclick = progCalistir;
+  $("p-dur").onclick = () => { prog.dur = true; };
+
+  // Kola yükle: PAUSE, RESET, sonra her poz için "a1..a6 PUT" ve Arduino'nun "Poz kaydedildi" cevabı beklenir
+  // (EEPROM yazımı ~40 ms sürer; cevap beklemeden göndermek Arduino'nun seri tamponunu taşırır)
+  function satirBekle(re, ms) {
+    return new Promise((res, rej) => {
+      const d = { re, res, t: setTimeout(() => { usb.dinleyici.splice(usb.dinleyici.indexOf(d), 1); rej(new Error("Arduino cevap vermedi")); }, ms) };
+      usb.dinleyici.push(d);
+    });
+  }
+  async function progYukle() {
+    if (prog.calisiyor || !usb.hazir) return;
+    const { hedefler, hatalar } = PR.coz(program, S, O, hedefOnda());
+    if (hatalar.length) return progMsg(hatalar[0].mesaj, "bad");
+    const bloklar = PR.yuklemeKomutlari(hedefler);
+    if (!bloklar.length) return progMsg("Yüklenecek poz yok", "bad");
+    if (bloklar.length > 50) return progMsg(`Kol en fazla 50 poz saklar, bu program ${bloklar.length} poz`, "bad");
+    if (Date.now() - prog.onay > 4000) {
+      prog.onay = Date.now();
+      progMsg(`Koldaki ${usb.pozSayisi} kayıtlı poz silinip yerine ${bloklar.length} poz yazılacak. Onaylıyorsan “Kola yükle”ye bir daha bas.`, "bad");
+      return;
+    }
+    prog.onay = 0; prog.calisiyor = true; dugmeler();
+    try {
+      usbYaz("PAUSE"); await satirBekle(/Duraklatildi/, 2000);
+      usbYaz("RESET"); await satirBekle(/Kayitlar silindi/, 2000);
+      usb.hedef = null;
+      for (let k = 0; k < bloklar.length; k++) {
+        progMsg(`Kola yükleniyor · ${k + 1}/${bloklar.length}`);
+        usbYaz(bloklar[k]);
+        const l = await satirBekle(/Poz kaydedildi|Kayit dolu|once PAUSE/, 2000);
+        if (!/kaydedildi/.test(l)) throw new Error("Arduino: " + l);
+      }
+      progMsg(`Kola ${bloklar.length} poz yüklendi. RUN ile (buradan ya da telefondan) döngüde oynatır.${hedefler.length > bloklar.length ? " Beklemeler kolda yok." : ""}`, "ok");
+    } catch (e) { progMsg("Yükleme yarım kaldı: " + e.message, "bad"); }
+    prog.calisiyor = false; dugmeler();
+  }
+  $("p-yukle").onclick = progYukle;
+  progCiz(); dugmeler();
+  // Yol, kolun şu anki hedefinden başlar: kol başka yoldan (kaydırıcı, ucu sürme, telefon) hareket edince yenile
+  let sonBas = "";
+  setInterval(() => {
+    if (prog.calisiyor || !program.length) return;
+    const b = hedefOnda().join(",");
+    if (b !== sonBas) { sonBas = b; progCiz(); }
+  }, 400);
+
+  // ------------------------------------------------ kalibrasyon sekmesi
+  const KAL = [
+    ["s1 Gövde", "Kol tam ileri bakıyor (tabanın önüne)", "yukarıdan bakınca saat yönünün tersine (sola)"],
+    ["s2 Omuz", "Üst kol dik yukarı", "üst kol öne eğilir"],
+    ["s3 Dirsek", "Ön kol üst kolla aynı doğrultuda (düz)", "ön kol öne / aşağı katlanır"],
+    ["s4 Bilek dönüş", "Tutucu çeneleri yana (sol–sağ) açılıyor", "uçtan bakınca saat yönünün tersine"],
+    ["s5 Bilek eğim", "Bilek ön kolla aynı doğrultuda", "uç öne / aşağı eğilir"],
+  ];
+  const mKal = $("m-kal");
+  const kalMsg = (t, cls = "") => { mKal.textContent = t; mKal.className = "msg " + cls; };
+  const kalKaydet = () => {
+    S.kalibrasyon(kal);
+    try { localStorage.setItem("servokol-kalibrasyon", JSON.stringify(kal)); } catch (e) {}
+    progCiz(); erisimCiz();
+  };
+  // Tek servoyu 0,1° çözünürlükte götür (oynatma ya da program sürerken değil)
+  function servoyaGit(i, onda) {
+    if (oynuyor() || prog.calisiyor) { kalMsg("Oynatma ya da program sürüyor, önce durdur", "bad"); return; }
+    komut("INCE", i, kol.sinirla(i, Math.round(onda))); komut("GIT");
+  }
+  const kalBody = $("kal-body");
+  KAL.forEach(([ad, ref, artinca], i) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td style="white-space:nowrap">${ad}</td><td class="kal-ref">${ref}<small>açı artınca ${artinca}</small></td>` +
+      `<td style="min-width:170px"><input type="range" id="k-s${i}" min="${S.SERVO_MIN[i]}" max="${S.SERVO_MAX[i]}" step="0.5" aria-label="${ad} servo açısı"></td>` +
+      `<td style="white-space:nowrap"><span class="code" style="display:inline" id="k-v${i}"></span> ` +
+      `<button data-d="-50">−5</button><button data-d="-5">−0,5</button><button data-d="5">+0,5</button><button data-d="50">+5</button> <button class="primary" data-ref>Burası</button></td>` +
+      `<td class="num" id="k-o${i}"></td>` +
+      `<td><select id="k-y${i}" aria-label="${ad} yön"><option value="1">+1</option><option value="-1">−1</option></select></td>`;
+    tr.querySelector("input").addEventListener("input", (e) => servoyaGit(i, +e.target.value * 10));
+    tr.querySelectorAll("button[data-d]").forEach((b) => (b.onclick = () => servoyaGit(i, hedefOnda()[i] + +b.dataset.d)));
+    tr.querySelector("button[data-ref]").onclick = () => {
+      kal.ofset[i] = Math.round(hedefOnda()[i] - 900) / 10;
+      kalKaydet(); kalCiz(); kalMsg(`${ad}: ofset ${fmt(kal.ofset[i], 1)}° kaydedildi`, "ok");
+    };
+    tr.querySelector("select").onchange = (e) => { kal.yon[i] = +e.target.value; kalKaydet(); kalMsg(`${ad}: yön ${kal.yon[i] > 0 ? "+1" : "−1"}`, "ok"); };
+    kalBody.appendChild(tr);
+  });
+  const tut = $("kal-tut");
+  tut.innerHTML = `<label class="adim" style="min-width:220px;flex:1">s6 Tutucu <input type="range" id="k-s5" min="${S.SERVO_MIN[5]}" max="${S.SERVO_MAX[5]}" step="1" style="flex:1"></label>` +
+    `<span class="code" style="display:inline" id="k-v5"></span><button id="k-acik">Açık bu</button><button id="k-kapali">Kapalı bu</button><span class="note" id="k-tut"></span>`;
+  $("k-s5").addEventListener("input", (e) => servoyaGit(5, +e.target.value * 10));
+  $("k-acik").onclick = () => { kal.acik = hedefOnda()[5] / 10; kalKaydet(); kalCiz(); };
+  $("k-kapali").onclick = () => { kal.kapali = hedefOnda()[5] / 10; kalKaydet(); kalCiz(); };
+  $("k-merkez").onclick = () => {
+    if (oynuyor() || prog.calisiyor) return kamMsg("m-merkez", "Oynatma ya da program sürüyor, önce durdur", "bad");
+    for (let i = 0; i < 6; i++) komut("INCE", i, kol.sinirla(i, 900));
+    komut("GIT");
+    kamMsg("m-merkez", usb.bagli ? "Servolar 90°'ye gidiyor" : "Simülasyonda 90°'ye gidiyor; gerçek servolar için önce kola bağlan", usb.bagli ? "ok" : "");
+  };
+  $("k-ref").onclick = () => {
+    if (oynuyor() || prog.calisiyor) { kalMsg("Oynatma ya da program sürüyor, önce durdur", "bad"); return; }
+    const sv = S.servoAci([0, 0, 0, 0, 0]);
+    sv.forEach((v, i) => komut("INCE", i, kol.sinirla(i, Math.round(v * 10)))); komut("GIT");
+    kalMsg("Referans pozu: kol dik yukarı ve düz, gövde ileri, tutucu çeneleri yana açılıyor olmalı. Değilse o eklemin satırını düzelt.", "ok");
+  };
+  $("k-ver").onclick = () => { $("k-json").value = JSON.stringify(kal); };
+  $("k-kopyala").onclick = async () => {
+    $("k-json").value = JSON.stringify(kal);
+    try { await navigator.clipboard.writeText($("k-json").value); kalMsg("Kalibrasyon panoya kopyalandı", "ok"); }
+    catch (e) { $("k-json").select(); kalMsg("Seçildi, Ctrl+C ile kopyala"); }
+  };
+  $("k-al").onclick = () => {
+    try {
+      const k = JSON.parse($("k-json").value);
+      const dizi = (a) => Array.isArray(a) && a.length === 5 && a.every((v) => Number.isFinite(+v));
+      if (!dizi(k.yon) || !dizi(k.ofset)) throw new Error("yon ve ofset 5'er sayı olmalı");
+      if (prog.calisiyor) return;
+      kal.yon = k.yon.map((v) => (+v < 0 ? -1 : 1)); kal.ofset = k.ofset.map(Number);
+      if (Number.isFinite(+k.acik)) kal.acik = +k.acik;
+      if (Number.isFinite(+k.kapali)) kal.kapali = +k.kapali;
+      kalKaydet(); kalCiz(); kalMsg("Kalibrasyon yüklendi", "ok");
+    } catch (e) { kalMsg("JSON okunamadı: " + e.message, "bad"); }
+  };
+  $("k-sifirla").onclick = () => {
+    if (Date.now() - prog.onay > 4000) { prog.onay = Date.now(); kalMsg("Tüm ofsetler 0, yönler +1 olacak: emin misin? Bir daha bas.", "bad"); return; }
+    prog.onay = 0;
+    Object.assign(kal, { yon: [1, 1, 1, 1, 1], ofset: [0, 0, 0, 0, 0], acik: PR.ACIK, kapali: PR.KAPALI });
+    kalKaydet(); kalCiz(); kalMsg("Varsayılana dönüldü");
+  };
+  function kalCiz() {
+    const h = hedefOnda();
+    for (let i = 0; i < 6; i++) {
+      const r = $("k-s" + i); if (document.activeElement !== r) r.value = h[i] / 10;
+      $("k-v" + i).textContent = fmt(h[i] / 10, 1) + "°";
+      if (i < 5) { $("k-o" + i).textContent = (kal.ofset[i] > 0 ? "+" : "") + fmt(kal.ofset[i], 1) + "°"; $("k-y" + i).value = String(kal.yon[i]); }
+    }
+    $("k-tut").textContent = `açık ${fmt(kal.acik)}° · kapalı ${fmt(kal.kapali)}°`;
+  }
+  setInterval(() => { if (!$("p-kal").hidden) kalCiz(); }, 150);
+  kalCiz();
+
+  // ------------------------------------------------ kamera (servo_kamera.js)
+  const KM = window.ServoKamera;
+  const SANAL_ISARET = [[120, -120], [280, -120], [280, 120], [120, 120]];
+  const kamC = $("kam-c"), kamX = kamC.getContext("2d");
+  const ham = document.createElement("canvas"), hamX = ham.getContext("2d", { willReadFrequently: true });
+  ham.width = 640; ham.height = 480;
+  const kamS = {
+    kaynak: null, akis: null, video: null, w: 640, h: 480, H: null, G: null, kam: null, mod: null, nesneler: [], sonTara: 0,
+    noktalar: SANAL_ISARET.map(([x, y]) => ({ px: null, x, y })), kalibler: {}, renkler: [], halka: null,
+    bant: [330, 0.76, 0.84], oto: null, kalibTur: "el",
+    ayir: { calisiyor: false, dur: false },
+  };
+  try {
+    const k = JSON.parse(localStorage.getItem("servokol-kamera") || "null");
+    if (k) {
+      if (k.kalibler && typeof k.kalibler === "object") kamS.kalibler = k.kalibler;
+      if (Array.isArray(k.renkler)) kamS.renkler = k.renkler.filter((r) => r && typeof r === "object");
+      if (Number.isFinite(+k.yuk)) $("kk-yuk").value = +k.yuk;
+      if (Number.isFinite(+k.nyuk)) $("n-yuk").value = +k.nyuk;
+      if (Array.isArray(k.bant) && k.bant.length === 3) kamS.bant = k.bant.map(Number);
+    }
+  } catch (e) {}
+  const kamKaydet = () => {
+    if (kamS.kaynak) kamS.kalibler[kamS.kaynak] = { noktalar: kamS.noktalar, oto: kamS.oto, tur: kamS.kalibTur };
+    try { localStorage.setItem("servokol-kamera", JSON.stringify({ kalibler: kamS.kalibler, renkler: kamS.renkler, yuk: +$("kk-yuk").value, nyuk: +$("n-yuk").value, bant: kamS.bant })); } catch (e) {}
+  };
+  const kamMsg = (id, t, cls = "") => { const m = $(id); m.textContent = t; m.className = "msg " + cls; };
+
+  // ---- sanal sahne: masa, işaretler, küpler, ikinci çizici
+  const masa = new THREE.Mesh(new THREE.PlaneGeometry(800, 800), new THREE.MeshStandardMaterial({ color: 0x8a8d90, roughness: 0.95 }));
+  masa.position.set(150, 0, -0.6); masa.visible = false; root.add(masa);
+  const SIYAH_M = new THREE.MeshBasicMaterial({ color: 0x111111 });
+  SANAL_ISARET.forEach(([x, y]) => {
+    for (const [a, b] of [[18, 3], [3, 18]]) { const m = new THREE.Mesh(new THREE.BoxGeometry(a, b, 0.6), SIYAH_M); m.position.set(x, y, 0.3); root.add(m); }
+  });
+  const kupGrup = new THREE.Group(); root.add(kupGrup);
+  const KUP_RENK = [0xc62828, 0x2e9e44, 0xe0c020];
+  let kupler = [];
+  function kupEkle(x, y, aci, renk, k = 20) {
+    const m = new THREE.Mesh(new THREE.BoxGeometry(k, k, k), new THREE.MeshStandardMaterial({ color: KUP_RENK[renk], roughness: 0.6 }));
+    m.position.set(x, y, k / 2); m.rotation.z = aci; kupGrup.add(m);
+    kupler.push({ mesh: m, k, renk, tutulan: false });
+  }
+  function kupleriKaldir() {
+    for (const k of kupler) { k.mesh.parent.remove(k.mesh); k.mesh.geometry.dispose(); k.mesh.material.dispose(); }
+    kupler = [];
+  }
+  function kupleriDagit(n = 5) {
+    kupleriKaldir();
+    const yer = [];
+    for (let deneme = 0; yer.length < n && deneme < 500; deneme++) {
+      const r = 160 + Math.random() * 80, t = (-80 + Math.random() * 70) * R, x = r * Math.cos(t), y = r * Math.sin(t);
+      if (yer.every(([a, b]) => Math.hypot(a - x, b - y) > 40)) yer.push([x, y]);
+    }
+    yer.forEach(([x, y], i) => kupEkle(x, y, Math.random() * Math.PI, i % 3));
+    kupEkle(275 * Math.cos(-20 * R), 275 * Math.sin(-20 * R), 0.3, 0);   // kolun erişemeyeceği bir küp
+  }
+  // Tutma: çeneler küpün üstünde kapanınca küp kola bağlanır, açılınca dik olarak masaya (ya da alttaki küpün üstüne) düşer
+  const _v = new THREE.Vector3();
+  let oncekiAr = 99;
+  function kupGuncelle() {
+    if (!kupler.length) return;
+    const a = eklemCiz(); root.updateMatrixWorld(true);
+    const ar = parmak(a[5]), u = root.worldToLocal(uc.getWorldPosition(_v));
+    const t = kupler.find((k) => k.tutulan);
+    if (t) {
+      if (ar > t.k / 2 + 1.5) {
+        kupGrup.attach(t.mesh);
+        const m = t.mesh, ex = new THREE.Vector3(1, 0, 0).applyQuaternion(m.quaternion);
+        m.rotation.set(0, 0, Math.atan2(ex.y, ex.x));
+        let z = t.k / 2;
+        for (const k of kupler) if (k !== t && Math.hypot(k.mesh.position.x - m.position.x, k.mesh.position.y - m.position.y) < k.k * 0.8) z = Math.max(z, k.mesh.position.z + k.k / 2 + t.k / 2);
+        m.position.z = z; t.tutulan = false;
+      }
+    } else if (oncekiAr > ar) {
+      for (const k of kupler) {
+        const p = k.mesh.position, lim = k.k / 2 + 0.5;
+        if (!kamS.kavramaYok && oncekiAr > lim && ar <= lim && Math.hypot(u.x - p.x, u.y - p.y) < k.k / 2 && u.z > p.z - k.k / 2 - 1 && u.z < p.z + k.k / 2 + 2) {
+          j4.attach(k.mesh); k.tutulan = true; break;
+        }
+      }
+    }
+    oncekiAr = ar;
+  }
+  setInterval(kupGuncelle, 30);
+
+  const sanalR = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+  sanalR.setPixelRatio(1); sanalR.setSize(640, 480, false);
+  const sanalKam = new THREE.PerspectiveCamera(50, 640 / 480, 10, 4000);
+  const kok = (x, y, z) => new THREE.Vector3(x, z, -y);              // kol çerçevesi (z yukarı, mm) -> sahne
+  function sanalKonum(tip) {
+    if (tip === "sanal-tepe") { sanalKam.position.copy(kok(190, 0, 560)); sanalKam.up.set(1, 0, 0); sanalKam.lookAt(kok(190, 0, 0)); }
+    else { sanalKam.position.copy(kok(470, 0, 280)); sanalKam.up.set(0, 1, 0); sanalKam.lookAt(kok(185, 0, 0)); }
+    sanalKam.updateMatrixWorld();
+  }
+  function sanalCiz() {
+    eklemCiz(); root.updateMatrixWorld(true);
+    const gizle = [grid, yolGrup, hedefIsaret, erisim, uc].filter(Boolean), eski = gizle.map((o) => o.visible), bg = scene.background;
+    gizle.forEach((o) => (o.visible = false)); masa.visible = true; bant.visible = cubuk.visible = true; scene.background = new THREE.Color(0x26292c);
+    sanalR.render(scene, sanalKam);
+    masa.visible = false; bant.visible = cubuk.visible = false; scene.background = bg; gizle.forEach((o, i) => (o.visible = eski[i]));
+    return sanalR.domElement;
+  }
+  const sanalIzdus = (x, y, z = 0) => { const v = kok(x, y, z).project(sanalKam); return [(v.x + 1) / 2 * kamS.w, (1 - v.y) / 2 * kamS.h]; };
+
+  // ---- kaynaklar
+  const kameraIzinli = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia) &&
+    !(document.featurePolicy && document.featurePolicy.allowsFeature && !document.featurePolicy.allowsFeature("camera"));
+  async function kameraListele() {
+    const sel = $("kam-kaynak"), secili = sel.value;
+    [...sel.options].filter((o) => !o.value.startsWith("sanal")).forEach((o) => o.remove());
+    if (!kameraIzinli) return;
+    let cihazlar = [];
+    try { cihazlar = (await navigator.mediaDevices.enumerateDevices()).filter((d) => d.kind === "videoinput"); } catch (e) {}
+    const adli = cihazlar.filter((d) => d.deviceId && d.label);
+    if (adli.length) adli.forEach((d, i) => sel.add(new Option(d.label || `Kamera ${i + 1}`, d.deviceId)));
+    else sel.add(new Option("Gerçek kamera (laptop / USB)", "varsayilan"));
+    if ([...sel.options].some((o) => o.value === secili)) sel.value = secili;
+  }
+  if (!kameraIzinli) kamMsg("m-kam", "Bu açılışta gerçek kameraya erişilemiyor (sayfa gömülü ya da tarayıcı desteklemiyor); sanal kamera çalışır.");
+  kameraListele();
+
+  function kamDurdur() {
+    if (kamS.akis) kamS.akis.getTracks().forEach((t) => t.stop());
+    kamS.akis = null; kamS.video = null; kamS.kaynak = null; kamS.mod = null;
+    $("kam-baslat").disabled = false; $("kam-durdur").disabled = true; $("kam-hud").textContent = "Kamera kapalı";
+    kamX.fillStyle = "#16191c"; kamX.fillRect(0, 0, kamC.width, kamC.height);
+    kamX.fillStyle = "#9aa5ae"; kamX.font = "500 18px 'IBM Plex Sans', sans-serif"; kamX.textAlign = "center";
+    kamX.fillText("Kamera kapalı · kaynağı seçip Başlat'a bas", kamC.width / 2, kamC.height / 2); kamX.textAlign = "start";
+    modGoster();
+  }
+  async function kamBaslat() {
+    if (kamS.ayir.calisiyor) return;
+    kamDurdur();
+    const v = $("kam-kaynak").value;
+    if (v.startsWith("sanal")) {
+      kamS.w = 640; kamS.h = 480; sanalKonum(v);
+      if (v === "sanal-tepe") $("kk-yuk").value = 560;                  // sanal kameranın gerçek yüksekliği
+      if (!kupler.length) kupleriDagit();
+    } else {
+      try {
+        const akis = await navigator.mediaDevices.getUserMedia({ video: { deviceId: v === "varsayilan" ? undefined : { exact: v }, width: { ideal: 640 }, height: { ideal: 480 } }, audio: false });
+        const video = document.createElement("video");
+        video.muted = true; video.playsInline = true; video.srcObject = akis;
+        await video.play();
+        kamS.akis = akis; kamS.video = video; kamS.w = video.videoWidth || 640; kamS.h = video.videoHeight || 480;
+        kameraListele();
+      } catch (e) {
+        const m = { NotAllowedError: "Kamera izni verilmedi. Adres çubuğundaki kamera simgesinden izin verip yeniden dene.",
+                    NotFoundError: "Kamera bulunamadı.", NotReadableError: "Kamera başka bir programda açık (görüntülü görüşme vb.), onu kapat.",
+                    SecurityError: "Bu sayfa gömülü açıldığı için kameraya erişemiyor; dosyayı Chrome ya da Edge ile doğrudan aç.",
+                    OverconstrainedError: "Seçilen kamera açılamadı; listeden başka birini seç." }[e.name];
+        kamMsg("m-kam", m || "Kamera açılamadı: " + e.message, "bad");
+        return;
+      }
+    }
+    kamS.kaynak = v;
+    kamC.width = ham.width = kamS.w; kamC.height = ham.height = kamS.h;
+    const kayit = kamS.kalibler[v], kn = Array.isArray(kayit) ? kayit : kayit && kayit.noktalar;   // eski kayıt: yalnız nokta dizisi
+    kamS.noktalar = Array.isArray(kn) && kn.length === 4 ? kn.map((n) => ({ px: n.px, x: +n.x, y: +n.y })) : SANAL_ISARET.map(([x, y]) => ({ px: null, x, y }));
+    kamS.oto = kayit && kayit.oto ? kayit.oto : null;
+    kamS.kalibTur = kayit && kayit.tur === "oto" && kamS.oto ? "oto" : "el";
+    if (kamS.kalibTur === "oto") otoUygula(kamS.oto); else kalibHesapla(true);
+    kalNoktaCiz();
+    $("kam-baslat").disabled = true; $("kam-durdur").disabled = false;
+    kamMsg("m-kam", `${$("kam-kaynak").selectedOptions[0].text} açık · ${kamS.w}×${kamS.h}`, "ok");
+    modGoster();
+    const no = (kamS.dongu = (kamS.dongu || 0) + 1);
+    requestAnimationFrame((t) => kamDongu(t, no));
+  }
+  function kareAl() {
+    if (!kamS.kaynak) return false;
+    let src = null;
+    if (kamS.kaynak.startsWith("sanal")) src = sanalCiz();
+    else if (kamS.video && kamS.video.readyState >= 2) src = kamS.video;
+    if (!src) return false;
+    hamX.drawImage(src, 0, 0, kamS.w, kamS.h);
+    return true;
+  }
+  function kamDongu(t, no) {
+    if (!kamS.kaynak || no !== kamS.dongu) return;               // eski başlatmanın döngüsü: bitir
+    if (!$("p-kam").hidden && kareAl()) {
+      if ($("n-canli").checked && kamS.H && !kamS.ayir.calisiyor && t - kamS.sonTara > 250) { kamS.sonTara = t; tara(false); }
+      kamCiz();
+    }
+    requestAnimationFrame((t2) => kamDongu(t2, no));
+  }
+
+  // ---- masa kalibrasyonu
+  function kalNoktaCiz() {
+    const k = $("kal-noktalar"); k.innerHTML = "";
+    kamS.noktalar.forEach((n, i) => {
+      const d = document.createElement("div");
+      d.className = "kalnokta" + (kamS.mod && kamS.mod.tip === "isaret" && kamS.mod.i === i ? " aktif" : "");
+      d.innerHTML = `<span>${i + 1}</span><span class="code" style="display:inline;padding:1px 3px">${n.px ? n.px.map((v) => Math.round(v)).join(", ") : "—"}</span>` +
+        `<input type="number" step="5" value="${n.x}" aria-label="${i + 1}. nokta X mm"><input type="number" step="5" value="${n.y}" aria-label="${i + 1}. nokta Y mm">` +
+        `<span><button data-e="isaretle" title="Sonra görüntüde işaretin üstüne tıkla">İşaretle</button><button data-e="uc" title="Kolun ucu bu işaretin üstünde, masaya değerken: yerini koldan al">Uç burada</button></span>`;
+      const [ix, iy] = d.querySelectorAll("input");
+      ix.onchange = () => { n.x = +ix.value; kalibHesapla(true); kamKaydet(); };
+      iy.onchange = () => { n.y = +iy.value; kalibHesapla(true); kamKaydet(); };
+      d.querySelector('[data-e="isaretle"]').onclick = () => {
+        if (!kamS.kaynak) return kamMsg("m-kk", "Önce kamerayı başlat", "bad");
+        kamS.mod = { tip: "isaret", i }; modGoster(); kalNoktaCiz();
+      };
+      d.querySelector('[data-e="uc"]').onclick = () => {
+        const u = ucSimdi(); n.x = Math.round(u.x * 10) / 10; n.y = Math.round(u.y * 10) / 10;
+        kalNoktaCiz(); kalibHesapla(true); kamKaydet();
+        if (Math.abs(u.z) > 5) kamMsg("m-kk", `Uç masaya değmiyor gibi (Z = ${fmt(u.z)} mm); ucu işaretin tam üstüne, masaya indir.`, "bad");
+      };
+      k.appendChild(d);
+    });
+  }
+  function kalibHesapla(sessiz) {
+    kamS.H = kamS.G = kamS.kam = null; kamS.halka = null;
+    if (!kamS.kaynak) return false;
+    if (!kamS.noktalar.every((n) => n.px)) { if (!sessiz) kamMsg("m-kk", "Dört noktanın hepsini görüntüde işaretle", "bad"); else kamMsg("m-kk", `${kamS.noktalar.filter((n) => n.px).length}/4 nokta işaretli`); return false; }
+    const H = KM.homografi(kamS.noktalar.map((n) => n.px), kamS.noktalar.map((n) => [n.x, n.y]));
+    if (!H || !KM.ters(H)) { kamMsg("m-kk", "Hesaplanamadı: noktalardan üçü aynı doğru üstünde olmasın", "bad"); return false; }
+    kamS.H = H; kamS.G = KM.ters(H);
+    kamS.kam = KM.kameraKonumu(H, kamS.w, kamS.h) || KM.kameraElle(H, kamS.w, kamS.h, +$("kk-yuk").value);
+    const c = kamS.kam.C.map((v) => fmt(v)).join(", ");
+    kamMsg("m-kk", kamS.kam.elle ? `Kalibrasyon hazır · kamera tepeden (yükseklik elle: ${fmt(kamS.kam.C[2])} mm)`
+                                 : `Kalibrasyon hazır · kamera (${c}) mm'de, ${fmt(kamS.kam.egim)}° eğik bakıyor`, "ok");
+    return true;
+  }
+  $("kk-hesapla").onclick = () => { if (kalibHesapla(false)) kamS.kalibTur = "el"; kamKaydet(); };
+  $("kk-yuk").onchange = () => { kalibHesapla(true); kamKaydet(); };
+
+  // ---- kolla otomatik kalibrasyon (servo_kamera.ucNoktalari, duzlemdenMasaya)
+  const BANT_ORTA = -TOP_UZAK;     // topun merkezi ucun TOP_UZAK mm aşağısında
+  const BANT_Z = TOP_UZAK + 10;    // kol ucu masanın bu kadar üstünde: topun merkezi masadan 10 mm, altı 5 mm yukarıda
+  function bantCiz() { $("kk-bant-sw").style.background = kamS.bant ? hsvCss(kamS.bant) : "transparent"; }
+  function otoUygula(oto) {
+    if (!oto || oto.px.length < 4) return false;
+    const Hh = KM.homografi(oto.px, oto.xy), r = Hh && KM.duzlemdenMasaya(Hh, kamS.w, kamS.h, oto.h, +$("kk-yuk").value);
+    if (!r) { kamMsg("m-kk", "Otomatik kalibrasyon hesaplanamadı: bant noktaları bir doğru üstünde ya da kamera konumu tutarsız", "bad"); return false; }
+    kamS.H = r.H; kamS.G = KM.ters(r.H); kamS.kam = r.kam; kamS.halka = null;
+    const c = r.kam.C.map((v) => fmt(v)).join(", ");
+    kamMsg("m-kk", `Otomatik kalibrasyon hazır · ${oto.px.length} nokta, nokta hatası ${fmt(KM.hata(Hh, oto.px, oto.xy), 1)} mm · ` +
+      (r.kam.elle ? `kamera tepeden (yükseklik elle: ${fmt(r.kam.C[2])} mm)` : `kamera (${c}) mm'de, ${fmt(r.kam.egim)}° eğik`), "ok");
+    modGoster();
+    return true;
+  }
+  async function otoKalibre() {
+    if (kamS.ayir.calisiyor || prog.calisiyor) return;
+    if (!kamS.kaynak) return kamMsg("m-kk", "Önce kamerayı başlat", "bad");
+    if (oynuyor()) return kamMsg("m-kk", "Kayıt oynatılıyor, önce PAUSE", "bad");
+    if (usb.bagli && !usb.hazir) return kamMsg("m-kk", "Kol daha hazır değil", "bad");
+    const hedef = KM.ucNoktalari(S, O, window.ServoProgram, BANT_Z), kural = KM.renkKurali(kamS.bant), px = [], xy = [];
+    kamS.ayir = { calisiyor: true, dur: false }; prog.calisiyor = true; dugmeler(); ayirDugmeler();
+    const durdu = () => kamS.ayir.dur;
+    try {
+      for (let i = 0; i < hedef.length && !durdu(); i++) {
+        const [x, y] = hedef[i], q = window.ServoProgram.ikCoz(S, O, [x, y, BANT_Z], 180);
+        if (!q) continue;
+        q[3] = 0;                                                   // bilek düz
+        const onda = hedefOnda(), sv = S.servoAci(q);
+        for (let j = 0; j < 5; j++) onda[j] = kol.sinirla(j, Math.round(sv[j] * 10));
+        onda[5] = S.SERVO_MIN[5] * 10;                               // tutucu kapalı: top parmak uçlarının altında
+        kamMsg("m-kk", `Otomatik kalibrasyon · ${i + 1}/${hedef.length}: uç (${fmt(x)}, ${fmt(y)}) mm'ye gidiyor`);
+        const r = await kolaGit(onda, durdu);
+        if (r.durdu || r.hata) break;
+        await new Promise((res) => setTimeout(res, 300));
+        if (!kareAl()) break;
+        const L = KM.lekeler(hamX.getImageData(0, 0, kamS.w, kamS.h).data, kamS.w, kamS.h, kural, { minAlan: 6 });
+        if (L.length) { px.push([L[0].cx, L[0].cy]); xy.push([x, y]); }
+        kamS.oto = { px: px.slice(), xy: xy.slice(), h: BANT_Z + BANT_ORTA }; kamCiz();
+      }
+      if (!durdu()) await kolaGit(EV.map((v) => Math.round(v * 10)), durdu);
+    } finally {
+      kamS.ayir.calisiyor = false; prog.calisiyor = false; dugmeler(); ayirDugmeler();
+    }
+    if (kamS.ayir.dur) { komut("DURAKLAT"); return kamMsg("m-kk", "Durduruldu"); }
+    // Aykırı noktaları ele (top bir nesnenin arkasında kaldı, yanında benzer renk vardı): en kötü uyan nokta, hata
+    // 1 mm'nin altına inene ya da 6 nokta kalana dek atılır
+    let atilan = 0;
+    while (px.length > 6) {
+      const Hd = KM.homografi(px, xy);
+      if (!Hd) break;
+      const art = px.map((p, i) => { const q = KM.uygula(Hd, p); return Math.hypot(q[0] - xy[i][0], q[1] - xy[i][1]); });
+      const en = art.indexOf(Math.max(...art));
+      if (art[en] < 1) break;
+      px.splice(en, 1); xy.splice(en, 1); atilan++;
+    }
+    // Yeterli ve yayılmış nokta yoksa (ör. top kolun altında kaldı) yanlış kalibrasyonu uygulamaktansa söyle
+    if (px.length < 6) {
+      kamS.oto = null; kamCiz();
+      return kamMsg("m-kk", `Top yalnız ${px.length}/${hedef.length} noktada görüldü, en az 6 gerek. Kamera tepeden bakıyorsa top kolun altında kalır: elle 4 işaret yöntemini kullan. Değilse top rengini yeniden seç ve ışığı kontrol et.`, "bad");
+    }
+    const Hh = KM.homografi(px, xy), dene = Hh && KM.duzlemdenMasaya(Hh, kamS.w, kamS.h, BANT_Z + BANT_ORTA, +$("kk-yuk").value);
+    if (dene && dene.kam.elle) {
+      kamS.oto = null; kamCiz();
+      return kamMsg("m-kk", "Kamera tepeden bakıyor: bu yöntemde top kolun gölgesinde kalıp kayar. Elle 4 işaret yöntemini kullan.", "bad");
+    }
+    kamS.oto = { px, xy, h: BANT_Z + BANT_ORTA };
+    if (otoUygula(kamS.oto)) {
+      kamS.kalibTur = "oto"; kamKaydet();
+      if (atilan) $("m-kk").textContent += ` · ${atilan} uyumsuz nokta atıldı (masada top rengine yakın bir şey ya da topu örten bir nesne olabilir)`;
+    }
+  }
+  $("kk-oto").onclick = otoKalibre;
+  $("kk-bant").onclick = () => { if (!kamS.kaynak) return kamMsg("m-kk", "Önce kamerayı başlat", "bad"); kamS.mod = { tip: "bant" }; modGoster(); };
+
+  // ---- renkler
+  const hsvCss = ([h, s, v]) => { const l = v * (1 - s / 2), sl = l === 0 || l === 1 ? 0 : (v - l) / Math.min(l, 1 - l); return `hsl(${h.toFixed(0)} ${(sl * 100).toFixed(0)}% ${(l * 100).toFixed(0)}%)`; };
+  const birakErisilir = (x, y) => [180, 160, 140, 120].some((a) => window.ServoProgram.ikCoz(S, O, [x, y, 15], a));
+  function renkCiz() {
+    const k = $("renkler"); k.innerHTML = "";
+    if (!kamS.renkler.length) k.innerHTML = '<p class="note">Renk yok. "Hazır" ile başla ya da "+ Renk" ekleyip görüntüden seç.</p>';
+    kamS.renkler.forEach((r, i) => {
+      const d = document.createElement("div");
+      d.className = "renk-satir" + (kamS.mod && kamS.mod.tip === "renk" && kamS.mod.i === i ? " aktif" : "");
+      const uyari = Number.isFinite(r.x) && !birakErisilir(r.x, r.y) ? " uyari" : "";
+      d.innerHTML = `<span class="sw" style="background:${r.hsv ? hsvCss(r.hsv) : "transparent"}"></span><input type="text" value="" aria-label="Renk adı">` +
+        `<button data-e="sec">Seç</button><input type="number" step="5" class="${uyari}" value="${r.x ?? ""}" aria-label="Bırakma X mm"><input type="number" step="5" class="${uyari}" value="${r.y ?? ""}" aria-label="Bırakma Y mm">` +
+        `<button data-e="sil" aria-label="Rengi sil">✕</button>`;
+      const [ad, ix, iy] = d.querySelectorAll("input");
+      ad.value = r.ad || "";
+      ad.onchange = () => { r.ad = ad.value; kamKaydet(); };
+      ix.onchange = () => { r.x = ix.value === "" ? null : +ix.value; renkCiz(); kamKaydet(); };
+      iy.onchange = () => { r.y = iy.value === "" ? null : +iy.value; renkCiz(); kamKaydet(); };
+      d.querySelector('[data-e="sec"]').onclick = () => {
+        if (!kamS.kaynak) return kamMsg("m-ayir", "Önce kamerayı başlat", "bad");
+        kamS.mod = { tip: "renk", i }; modGoster(); renkCiz();
+      };
+      d.querySelector('[data-e="sil"]').onclick = () => { kamS.renkler.splice(i, 1); renkCiz(); kamKaydet(); };
+      k.appendChild(d);
+    });
+  }
+  $("r-ekle").onclick = () => { kamS.renkler.push({ ad: `Renk ${kamS.renkler.length + 1}`, hsv: null, x: null, y: null }); renkCiz(); kamKaydet(); };
+  $("r-hazir").onclick = () => {
+    kamS.renkler = [{ ad: "Kırmızı", hsv: [0, 0.8, 0.78], x: 130, y: 150 }, { ad: "Yeşil", hsv: [132, 0.71, 0.62], x: 60, y: 190 },
+                    { ad: "Sarı", hsv: [51, 0.86, 0.88], x: 178, y: 100 }];
+    renkCiz(); kamKaydet();
+  };
+
+  // ---- görüntüye tıklama
+  function modGoster() {
+    $("kam-view").classList.toggle("secim", !!kamS.mod);
+    const m = kamS.mod;
+    $("kam-hud").textContent = !kamS.kaynak ? "Kamera kapalı" : m ? (m.tip === "isaret" ? `${m.i + 1}. işaretin üstüne tıkla` : m.tip === "bant" ? "Tutucu ucundaki renkli topa tıkla" : `"${kamS.renkler[m.i].ad}" renkteki nesneye tıkla`)
+      : kamS.H ? "Kalibre · nesneler taban dikdörtgeniyle gösterilir" : "Kalibrasyon yok: işaretleri işaretle ya da kolla otomatik kalibre et";
+  }
+  function kamTik(x, y) {
+    const m = kamS.mod;
+    if (!m) return;
+    if (m.tip === "isaret") { kamS.noktalar[m.i].px = [x, y]; kamS.mod = null; if (kalibHesapla(true)) kamS.kalibTur = "el"; kalNoktaCiz(); }
+    else if (m.tip === "bant") {
+      const img = hamX.getImageData(0, 0, kamS.w, kamS.h).data, hsv = KM.ornek(img, kamS.w, kamS.h, Math.floor(x), Math.floor(y), 2);
+      if (hsv[1] < 0.2) kamMsg("m-kk", "Seçilen yer pek renkli değil; topun üstüne tıkla.", "bad");
+      kamS.bant = hsv; kamS.mod = null; bantCiz();
+    } else {
+      const img = hamX.getImageData(0, 0, kamS.w, kamS.h).data, hsv = KM.ornek(img, kamS.w, kamS.h, Math.floor(x), Math.floor(y), 4);
+      if (hsv[1] < 0.2) kamMsg("m-ayir", "Seçilen yer pek renkli değil (gri / beyaz / siyah); renkli bir nesneye tıkla.", "bad");
+      kamS.renkler[m.i].hsv = hsv; kamS.mod = null; renkCiz();
+    }
+    kamKaydet(); modGoster();
+  }
+  kamC.addEventListener("click", (e) => {
+    const r = kamC.getBoundingClientRect();
+    kamTik((e.clientX - r.left) * kamC.width / r.width, (e.clientY - r.top) * kamC.height / r.height);
+  });
+
+  // ---- tarama, liste, çizim
+  const zAl = () => { const h = +$("n-yuk").value; return Math.min(h, Math.max(5, h * 0.4)); };
+  function tara(planla) {
+    if (!kamS.H) return [];
+    const img = hamX.getImageData(0, 0, kamS.w, kamS.h).data, hN = +$("n-yuk").value, sonuc = [];
+    kamS.renkler.forEach((r, ri) => {
+      if (!r.hsv) return;
+      const L = KM.nesneBul(img, kamS.w, kamS.h, KM.renkKurali(r.hsv), { H: kamS.H, kam: kamS.kam, yukseklik: hN, adim: planla ? 1 : 2, minAlan: 60 });
+      for (const l of L) sonuc.push({ ri, n: l.nesne, l });
+    });
+    for (const s of sonuc) {
+      const r = kamS.renkler[s.ri], kutu = Number.isFinite(r.x) && Number.isFinite(r.y);
+      s.kutuda = kutu && Math.hypot(s.n.x - r.x, s.n.y - r.y) < 25;
+      s.plan = planla && kutu && !s.kutuda ? KM.alPlan(s.n, { x: r.x, y: r.y }, S, O, window.ServoProgram, hedefOnda(), { yukseklik: hN, acik: kal.acik, kapali: kal.kapali }) : undefined;
+    }
+    kamS.nesneler = sonuc; listeCiz();
+    return sonuc;
+  }
+  function listeCiz() {
+    const ul = $("n-liste"); ul.innerHTML = "";
+    if (!kamS.nesneler.length) { ul.innerHTML = `<li class="kotu">${kamS.H ? "Nesne bulunamadı" : "Önce kalibrasyon"}</li>`; return; }
+    for (const s of kamS.nesneler) {
+      const r = kamS.renkler[s.ri], li = document.createElement("li");
+      const durum = s.kutuda ? "kutuda" : !Number.isFinite(r.x) ? "kutusu yok" : s.alinamadi ? "alınamadı" : s.plan ? `alınabilir · tutucu ${s.plan.alet}°` : s.plan === null ? "erişilemez" : "";
+      li.className = s.plan === null ? "kotu" : "";
+      li.innerHTML = `<span class="sw" style="background:${hsvCss(r.hsv)}"></span><span>${fmt(s.n.x)}, ${fmt(s.n.y)} · ${fmt(((s.n.aci / R) % 180 + 180) % 180)}° · ${fmt(s.n.uzun)}×${fmt(s.n.kisa)} mm${durum ? " · " + durum : ""}</span>`;
+      ul.appendChild(li);
+    }
+  }
+  // Erişim halkası (z = alma yüksekliği): dik tutucuyla iç/dış sınır, eğik tutucuyla en uzak sınır
+  function halkaHesapla() {
+    const z = zAl(), dik = [[], []], egik = [];
+    for (let t = -90; t <= 90; t += 3) {
+      const c = Math.cos(t * R), s_ = Math.sin(t * R);
+      let lo = null, hi = null, he = null;
+      for (let r = 80; r <= 320; r += 2) {
+        if (window.ServoProgram.ikCoz(S, O, [r * c, r * s_, z], 180)) { if (lo === null) lo = r; hi = r; }
+        if ([170, 150, 130].some((a) => window.ServoProgram.ikCoz(S, O, [r * c, r * s_, z], a))) he = r;
+      }
+      if (lo !== null) { dik[0].push([lo * c, lo * s_]); dik[1].push([hi * c, hi * s_]); }
+      if (he !== null) egik.push([he * c, he * s_]);
+    }
+    kamS.halka = { dik, egik, z };
+  }
+  function kamCiz() {
+    kamX.drawImage(ham, 0, 0);
+    const G = kamS.G, P = (x, y) => KM.uygula(G, [x, y]);
+    kamX.lineWidth = 2; kamX.font = "600 13px 'IBM Plex Mono', monospace";
+    const cizgi = (pts, renk, kapali = false, kesik = false) => {
+      const q = pts.map(([x, y]) => P(x, y)).filter(Boolean);
+      if (q.length < 2) return;
+      kamX.setLineDash(kesik ? [6, 5] : []); kamX.strokeStyle = renk; kamX.beginPath();
+      q.forEach(([u, v], i) => (i ? kamX.lineTo(u, v) : kamX.moveTo(u, v)));
+      if (kapali) kamX.closePath();
+      kamX.stroke(); kamX.setLineDash([]);
+    };
+    if (G) {
+      if (!kamS.halka || kamS.halka.z !== zAl()) halkaHesapla();
+      cizgi(kamS.halka.dik[0], "rgba(80,220,140,.9)"); cizgi(kamS.halka.dik[1], "rgba(80,220,140,.9)"); cizgi(kamS.halka.egik, "rgba(80,220,140,.6)", false, true);
+      kamS.renkler.forEach((r) => {
+        if (!r.hsv || !Number.isFinite(r.x)) return;
+        const h = 18; cizgi([[r.x - h, r.y - h], [r.x + h, r.y - h], [r.x + h, r.y + h], [r.x - h, r.y + h]], hsvCss(r.hsv), true, true);
+      });
+      for (const s of kamS.nesneler) {
+        const n = s.n, c = Math.cos(n.aci), sn = Math.sin(n.aci), a = n.uzun / 2, b = n.kisa / 2;
+        const kose = [[a, b], [-a, b], [-a, -b], [a, -b]].map(([x, y]) => [n.x + x * c - y * sn, n.y + x * sn + y * c]);
+        cizgi(kose, s.plan === null ? "#ff5a4f" : "#ffffff", true);
+        const m = P(n.x, n.y);
+        if (m) { kamX.fillStyle = "#fff"; kamX.fillRect(m[0] - 2, m[1] - 2, 4, 4); }
+      }
+    }
+    if (kamS.oto && kamS.kalibTur === "oto") kamS.oto.px.forEach(([u, v]) => {
+      kamX.strokeStyle = "#ff6fc1"; kamX.beginPath(); kamX.arc(u, v, 7, 0, 2 * Math.PI); kamX.stroke();
+    });
+    if (kamS.kalibTur === "el") kamS.noktalar.forEach((n, i) => {
+      if (!n.px) return;
+      const [u, v] = n.px, aktif = kamS.mod && kamS.mod.tip === "isaret" && kamS.mod.i === i;
+      kamX.strokeStyle = aktif ? "#ffd84a" : "#4ac8ff"; kamX.beginPath(); kamX.moveTo(u - 9, v); kamX.lineTo(u + 9, v); kamX.moveTo(u, v - 9); kamX.lineTo(u, v + 9); kamX.stroke();
+      kamX.fillStyle = "#4ac8ff"; kamX.fillText(String(i + 1), u + 6, v - 6);
+    });
+  }
+
+  // ---- renge göre ayırma
+  function ayirDugmeler() {
+    const c = kamS.ayir.calisiyor;
+    $("n-ayir").disabled = c; $("n-tara").disabled = c; $("n-dur").disabled = !c; $("kam-baslat").disabled = c || !!kamS.kaynak;
+  }
+  async function kolaGit(onda, durdu) {
+    return window.ServoProgram.calistir([{ tip: "eklem", onda, adim: 0 }], kolIo(durdu));
+  }
+  async function ayir() {
+    if (kamS.ayir.calisiyor || prog.calisiyor) return;
+    if (!kamS.kaynak) return kamMsg("m-ayir", "Önce kamerayı başlat", "bad");
+    if (!kamS.H) return kamMsg("m-ayir", "Önce masa kalibrasyonu", "bad");
+    if (!kamS.renkler.some((r) => r.hsv && Number.isFinite(r.x) && Number.isFinite(r.y))) return kamMsg("m-ayir", "En az bir renk seç ve kutusunun yerini yaz", "bad");
+    if (oynuyor()) return kamMsg("m-ayir", "Kayıt oynatılıyor, önce PAUSE", "bad");
+    if (usb.bagli && !usb.hazir) return kamMsg("m-ayir", "Kol daha hazır değil", "bad");
+    kamS.ayir = { calisiyor: true, dur: false }; prog.calisiyor = true; dugmeler(); ayirDugmeler();
+    const durdu = () => kamS.ayir.dur;
+    // Kavrama doğrulaması: denenen nesne bir sonraki taramada hâlâ yerindeyse kavrama başarısız. Bir nesne en fazla
+    // DENEME kez denenir, sonra "alınamadı" diye atlanır. Taşınan sayısı ancak doğrulanınca artar.
+    const DENEME = 2, YAKIN = 12;
+    kamS.denemeler = [];
+    let tasinan = 0, basarisiz = 0, son = "", cls = "ok", onceki = null;
+    try {
+      for (let tur = 0; tur < 30; tur++) {
+        if (durdu()) { son = "Durduruldu."; cls = ""; break; }
+        kamMsg("m-ayir", "Kol tarama pozuna çekiliyor…");
+        const r0 = await kolaGit(EV.map((v, i) => Math.round((i === 5 ? kal.acik : v) * 10)), durdu);   // görüşü kapatmasın
+        if (r0.durdu) { komut("DURAKLAT"); son = "Durduruldu."; cls = ""; break; }
+        await new Promise((r) => setTimeout(r, 300));
+        if (!kareAl()) { son = "Kameradan görüntü gelmiyor."; cls = "bad"; break; }
+        const liste = tara(true);
+        if (onceki) {                                             // bir önceki deneme tuttu mu?
+          const hala = liste.find((x) => x.ri === onceki.ri && Math.hypot(x.n.x - onceki.x, x.n.y - onceki.y) < YAKIN);
+          if (hala) { onceki.sayi++; basarisiz++; }                                   // hiç tutulmadı
+          else if (liste.some((x) => x.ri === onceki.ri && x.kutuda)) tasinan++;     // kutusunda
+          else basarisiz++;                                                          // yolda düştü ya da itildi: yeni yerinden yeniden denenir
+          onceki = null;
+        }
+        for (const x of liste) {
+          const d = kamS.denemeler.find((q) => q.ri === x.ri && Math.hypot(x.n.x - q.x, x.n.y - q.y) < YAKIN);
+          if (d && d.sayi >= DENEME) { x.alinamadi = true; x.plan = null; }
+        }
+        listeCiz();
+        const aday = liste.find((x) => x.plan);
+        kamCiz();
+        if (!aday) {
+          const alinamayan = liste.filter((x) => x.alinamadi).length;
+          const kalan = liste.filter((x) => !x.kutuda && !x.alinamadi && Number.isFinite(kamS.renkler[x.ri].x)).length;
+          son = [kalan ? `${kalan} nesneye erişilemiyor (halkanın dışında ya da kola fazla yakın).` : "",
+                 alinamayan ? `${alinamayan} nesne ${DENEME} denemede alınamadı (tutucu kapalı açısı, nesne boyu ya da kalibrasyonu kontrol et).` : ""]
+                .filter(Boolean).join(" ") || "Ayrılacak nesne kalmadı.";
+          cls = kalan || alinamayan ? "bad" : "ok";
+          break;
+        }
+        let d = kamS.denemeler.find((q) => q.ri === aday.ri && Math.hypot(aday.n.x - q.x, aday.n.y - q.y) < YAKIN);
+        if (!d) { d = { ri: aday.ri, x: aday.n.x, y: aday.n.y, sayi: 0 }; kamS.denemeler.push(d); }
+        d.x = aday.n.x; d.y = aday.n.y; onceki = d;
+        const r = kamS.renkler[aday.ri];
+        kamMsg("m-ayir", `${r.ad} (${fmt(aday.n.x)}, ${fmt(aday.n.y)}) → kutusu · tutucu ${aday.plan.alet}°${d.sayi ? ` · ${d.sayi + 1}. deneme` : ""}`, "ok");
+        const { hedefler, hatalar } = window.ServoProgram.coz(aday.plan.adimlar, S, O, hedefOnda());
+        if (hatalar.length) { son = hatalar[0].mesaj; cls = "bad"; break; }
+        const sonuc = await window.ServoProgram.calistir(hedefler, kolIo(durdu));
+        if (sonuc.durdu) { komut("DURAKLAT"); son = "Durduruldu."; cls = ""; break; }
+        if (sonuc.hata) { son = sonuc.hata; cls = "bad"; onceki = null; break; }
+      }
+    } finally {
+      kamS.ayir.calisiyor = false; prog.calisiyor = false; dugmeler(); ayirDugmeler();
+    }
+    kamMsg("m-ayir", `${tasinan} nesne taşındı${basarisiz ? `, ${basarisiz} kavrama tutmadı` : ""}. ${son}`, cls);
+  }
+  $("n-tara").onclick = () => { if (!kamS.kaynak) return kamMsg("m-ayir", "Önce kamerayı başlat", "bad"); kareAl(); tara(true); kamCiz(); };
+  $("n-ayir").onclick = ayir;
+  $("n-dur").onclick = () => { kamS.ayir.dur = true; };
+  $("n-yuk").onchange = () => { kamS.halka = null; kamKaydet(); };
+  $("kam-baslat").onclick = kamBaslat;
+  $("kam-durdur").onclick = () => { if (!kamS.ayir.calisiyor) kamDurdur(); };
+  $("kam-kaynak").onchange = () => { if (kamS.kaynak && !kamS.ayir.calisiyor) kamBaslat(); };
+  $("kam-kupler").onclick = () => { if (!kamS.ayir.calisiyor) kupleriDagit(); };
+  $("kam-kup-sil").onclick = () => { if (!kamS.ayir.calisiyor) kupleriKaldir(); };
+  kalNoktaCiz(); renkCiz(); listeCiz(); bantCiz(); modGoster();
+  window.servoKol.kamera = { kamS, kareAl, tara, ayir, otoKalibre, kamTik, kamBaslat, kalibHesapla, kupleriDagit, kupEkle, kupleriKaldir, sanalIzdus, kupler: () => kupler };
+
+  // ------------------------------------------------ bağlantı şeması (SVG)
+  function sema() {
+    const ink = css("--ink"), mut = css("--muted"), line = css("--line"), pan = css("--panel"), acc = css("--accent");
+    const RED = "#c0392b", BLK = ink, SIG = "#d9661a", BT = "#2e8b57";
+    let s = "";
+    const rect = (x, y, w, h, t, sub) => s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="6" fill="${pan}" stroke="${line}" stroke-width="1.5"/>` +
+      `<text x="${x + 10}" y="${y + 20}" font-size="14" font-weight="600" fill="${ink}">${t}</text>` + (sub ? `<text x="${x + 10}" y="${y + 37}" font-size="12" fill="${mut}">${sub}</text>` : "");
+    const wire = (pts, c, w = 2.2) => s += `<polyline points="${pts.map((p) => p.join(",")).join(" ")}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linejoin="round"/>`;
+    const lbl = (x, y, t, c = mut, a = "start") => s += `<text x="${x}" y="${y}" font-size="12" fill="${c}" text-anchor="${a}">${t}</text>`;
+    // Arduino
+    rect(360, 150, 210, 250, "Arduino Uno", "USB ile bilgisayara");
+    const pins = [["D3", 195], ["D4", 220], ["D5", 250], ["D6", 272], ["D7", 294], ["D8", 316], ["D9", 338], ["D10", 360]];
+    pins.forEach(([p, y]) => { lbl(560, y + 4, p, ink, "end"); s += `<circle cx="570" cy="${y}" r="3.5" fill="${ink}"/>`; });
+    lbl(372, 384, "5V", ink); s += `<circle cx="366" cy="380" r="3.5" fill="${RED}"/>`;
+    lbl(410, 384, "GND", ink); s += `<circle cx="404" cy="380" r="3.5" fill="${BLK}"/>`;
+    // Servolar
+    const sv = [["Servo 1 · gövde", "MG996R"], ["Servo 2 · omuz", "MG996R"], ["Servo 3 · dirsek", "MG996R"], ["Servo 4 · bilek dönüş", "SG90"], ["Servo 5 · bilek eğim", "SG90"], ["Servo 6 · tutucu", "SG90"]];
+    sv.forEach(([t, k], i) => {
+      const y = 70 + i * 66; rect(740, y, 210, 50, t, k);
+      const py = 250 + i * 22;
+      wire([[570, py], [650 + i * 8, py], [650 + i * 8, y + 25], [740, y + 25]], SIG);
+    });
+    lbl(655, 240, "sinyal", SIG);
+    // Servo besleme rayı
+    rect(40, 410, 230, 70, "5 V adaptör", "en az 3 A, önerilen 5 A");
+    wire([[270, 430], [700, 430], [700, 80], [740, 80]], RED, 3);
+    for (let i = 1; i < 6; i++) wire([[700, 80 + i * 66], [740, 80 + i * 66]], RED, 3);
+    wire([[270, 460], [720, 460], [720, 108], [740, 108]], BLK, 3);
+    for (let i = 1; i < 6; i++) wire([[720, 108 + i * 66], [740, 108 + i * 66]], BLK, 3);
+    lbl(470, 424, "+5 V servo rayı", RED); lbl(470, 478, "GND (ortak)", ink);
+    wire([[404, 384], [404, 460]], BLK, 2.2);
+    s += `<circle cx="404" cy="460" r="4" fill="${BLK}"/>`;
+    // Kondansatör (öneri)
+    s += `<line x1="610" y1="430" x2="610" y2="440" stroke="${RED}" stroke-width="2"/><line x1="598" y1="440" x2="622" y2="440" stroke="${ink}" stroke-width="2"/>` +
+         `<line x1="598" y1="447" x2="622" y2="447" stroke="${ink}" stroke-width="2"/><line x1="610" y1="447" x2="610" y2="460" stroke="${ink}" stroke-width="2"/>`;
+    lbl(628, 449, "1000 µF (öneri)", mut);
+    // HC-05
+    rect(40, 120, 200, 110, "HC-05 Bluetooth", "telefon uygulaması");
+    lbl(230, 160, "TX", ink, "end"); lbl(230, 182, "RX", ink, "end"); lbl(230, 204, "VCC", ink, "end"); lbl(230, 222, "GND", ink, "end");
+    wire([[240, 156], [300, 156], [300, 195], [570, 195]], BT);
+    // RX bölücü
+    wire([[570, 220], [330, 220]], BT); s += `<rect x="300" y="213" width="30" height="14" fill="${pan}" stroke="${ink}"/>`; lbl(315, 210, "1k", mut, "middle");
+    wire([[300, 220], [280, 220], [280, 178], [240, 178]], BT);
+    wire([[280, 220], [280, 245]], BT); s += `<rect x="273" y="245" width="14" height="30" fill="${pan}" stroke="${ink}"/>`; lbl(296, 265, "2k", mut);
+    wire([[280, 275], [280, 300], [404, 300], [404, 376]], BLK);
+    wire([[240, 200], [262, 200], [262, 330], [366, 330], [366, 376]], RED);
+    wire([[240, 218], [252, 218], [252, 300], [280, 300]], BLK);
+    lbl(40, 260, "RX hattı 3,3 V: 1k/2k bölücü", mut);
+    document.getElementById("sema").innerHTML = s;
+  }
+
+  // ------------------------------------------------ parça listesi
+  const BOM = [
+    ["MG996R servo (180°, metal dişli)", 3, 162.80, "Komponentci / Robot Sepeti 182,65"],
+    ["SG90 mikro servo", 3, 104.61, "Direnç.net"],
+    ["Arduino Uno R3 (klon)", 1, 261.36, "Robocombo (indirimli) / Robolink 472,50"],
+    ["HC-05 Bluetooth modülü", 1, 225.51, "Robotistan"],
+    ["5 V 5 A metal kasa adaptör", 1, 214.02, "Robocombo"],
+    ["DC jak, jumper kablo, mini breadboard, 1k + 2k direnç, 1000 µF kondansatör", 1, 150, "Tahmin"],
+    ["M3/M4 cıvata-somun (tutucu), lastik bant", 1, 60, "Tahmin"],
+    ["3D model (Cults3D, 2,85 $)", 1, 141, "Cults3D, kur 49,4"],
+  ];
+  const tb = document.getElementById("bom-body");
+  let top = 0;
+  BOM.forEach(([ad, n, b, k]) => { top += n * b; tb.insertAdjacentHTML("beforeend", `<tr><td>${ad}</td><td class="num">${n}</td><td class="num">${fmt(b, 2)} TL</td><td class="num">${fmt(n * b, 0)} TL</td><td>${k}</td></tr>`); });
+  tb.insertAdjacentHTML("beforeend", `<tr><td>3D baskı (~230 g PLA/PETG, hizmet)</td><td class="num">1</td><td class="num">0,25–6 TL/g</td><td class="num">58–1.380 TL</td><td>Online hizmet / İzmir atölye; 230 g orijinal sayfadaki yorumdan</td></tr>`);
+  document.getElementById("bom-top").textContent = `${fmt(top + 58, 0)} – ${fmt(top + 1380, 0)} TL`;
+
+  // ------------------------------------------------ sekmeler, döngü
+  const tabs = [["t-sim", "p-sim"], ["t-kam", "p-kam"], ["t-kal", "p-kal"], ["t-sema", "p-sema"], ["t-bom", "p-bom"]];
+  function setTab(id) {
+    tabs.forEach(([t, p]) => { const on = t === id; document.getElementById(t).setAttribute("aria-selected", on); document.getElementById(p).hidden = !on; });
+    if (id === "t-sim") resize();
+    if (id === "t-kam" && !kamS.kaynak && !kamS.otomatik) { kamS.otomatik = true; kamBaslat(); }   // boş kutu yerine çalışan bir örnek
+    try { localStorage.setItem("servokol-sekme", id); } catch (e) {}
+  }
+  tabs.forEach(([t]) => (document.getElementById(t).onclick = () => setTab(t)));
+  function resize() {
+    const r = canvas.parentElement.getBoundingClientRect(); if (!r.width) return;
+    renderer.setSize(r.width, r.height, false); cam.aspect = r.width / Math.max(1, r.height); cam.updateProjectionMatrix();
+  }
+  new ResizeObserver(resize).observe(canvas.parentElement);
+  const tema = () => { theme(); sema(); };
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", tema);
+  new MutationObserver(tema).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+  tema();
+  let ilk = "t-sim"; try { ilk = localStorage.getItem("servokol-sekme") || "t-sim"; } catch (e) {}
+  setTab(tabs.some(([t]) => t === ilk) ? ilk : "t-sim");
+
+  // Servo mantığı çizimden bağımsız ilerler (sekme arka plandayken de oynatma sürer, gerçek kol gibi)
+  let birikim = 0, last = performance.now();
+  setInterval(() => {
+    const now = performance.now();
+    birikim += now - last; last = now;
+    let n = 0;
+    while (birikim >= 10 && n < 400) { birikim -= 10; kol.adim(); n++; }   // komut.h gibi 10 ms'lik adımlar
+    if (n === 400) birikim = 0;
+  }, 10);
+  function loop() {
+    poz();
+    ctl.update(); renderer.render(scene, cam);
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+</script>
