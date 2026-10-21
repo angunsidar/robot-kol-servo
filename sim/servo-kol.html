@@ -337,7 +337,7 @@ details[open] > summary { margin-bottom: 6px; }
         <tr><td><code>D9</code></td><td>Servo 5 – bilek eğim (SG90)</td><td></td></tr>
         <tr><td><code>D10</code></td><td>Servo 6 – tutucu (SG90)</td><td>Kapanma sınırını kodda ayarla</td></tr>
         <tr><td><code>D3</code></td><td>HC-05 TX</td><td>Doğrudan</td></tr>
-        <tr><td><code>D4</code></td><td>HC-05 RX</td><td>1 kΩ / 2 kΩ bölücü ile (HC-05 RX 3,3 V)</td></tr>
+        <tr><td><code>D4</code></td><td>HC-05 RX</td><td>1 kΩ / 2 kΩ bölücü ile (HC-05 RX 3,3 V; 2 kΩ = iki 1 kΩ seri)</td></tr>
         <tr><td><code>5V</code>, <code>GND</code></td><td>HC-05 VCC, GND</td><td>HC-05 Arduino'dan beslenebilir</td></tr>
         <tr><td><code>GND</code></td><td>Servo adaptörü GND</td><td>Ortak toprak şart</td></tr>
       </tbody></table></div>
@@ -350,9 +350,9 @@ details[open] > summary { margin-bottom: 6px; }
     <div class="tbl-wrap"><table>
       <thead><tr><th>Parça</th><th>Adet</th><th>Birim</th><th>Toplam</th><th>Nereden</th></tr></thead>
       <tbody id="bom-body"></tbody>
-      <tfoot><tr><td colspan="3">Toplam (baskı hizmeti 0,25–6 TL/g aralığında)</td><td class="num" id="bom-top"></td><td></td></tr></tfoot>
+      <tfoot><tr><td colspan="3">Toplam (baskı teklifi 500–2.000 TL aralığında varsayıldı)</td><td class="num" id="bom-top"></td><td></td></tr></tfoot>
     </table></div>
-    <p class="note">Fiyatlar arama anındaki satıcı sayfalarından; stok ve fiyat değişebilir. "Tahmin" yazanlar doğrulanmadı. 3D model Cults3D'de 2,85 $ ve kişisel kullanım lisanslı görünüyor; satın alma ve indirme sende.</p>
+    <p class="note">Fiyatlar 22 Ekim 2026'da ürün sayfalarından okundu (KDV dahil); stok ve fiyat değişebilir. Prize takılan adaptör seçildi: metal kasalı panel tipi kaynaklar 220 V kablosunun açık klemense elle bağlanmasını ister. "Tahmin" yazanlar doğrulanmadı. 3D model Cults3D'de 2,85 $ ve kişisel kullanım lisanslı görünüyor; satın alma ve indirme sende.</p>
   </section>
 </div>
 
@@ -2249,20 +2249,24 @@ details[open] > summary { margin-bottom: 6px; }
 
   // ------------------------------------------------ parça listesi
   const BOM = [
-    ["MG996R servo (180°, metal dişli)", 3, 162.80, "Komponentci / Robot Sepeti 182,65"],
-    ["SG90 mikro servo", 3, 104.61, "Direnç.net"],
-    ["Arduino Uno R3 (klon)", 1, 261.36, "Robocombo (indirimli) / Robolink 472,50"],
-    ["HC-05 Bluetooth modülü", 1, 225.51, "Robotistan"],
-    ["5 V 5 A metal kasa adaptör", 1, 214.02, "Robocombo"],
-    ["DC jak, jumper kablo, mini breadboard, 1k + 2k direnç, 1000 µF kondansatör", 1, 150, "Tahmin"],
-    ["M3/M4 cıvata-somun (tutucu), lastik bant", 1, 60, "Tahmin"],
-    ["3D model (Cults3D, 2,85 $)", 1, 141, "Cults3D, kur 49,4"],
+    ["MG996R servo (180°, metal dişli) — 360° modelini alma", 3, 200.50, "Robocombo, stok 49 (Komponentci, Robotistan, Robolink'te yok)"],
+    ["SG90 mikro servo (180°)", 3, 54.00, "Robocombo"],
+    ["Arduino Uno R3 klon (DIP çip, USB kablolu)", 1, 296.00, "Robocombo, stok 193"],
+    ["HC-05 Bluetooth modülü (pin çıkışlı)", 1, 149.50, "Robocombo"],
+    ["Micro breadboard 170 pin", 1, 21.00, "Robocombo"],
+    ["Jumper kablo 40 pin erkek-erkek + dişi-erkek (20 cm)", 1, 87.00, "Robocombo (42 + 45)"],
+    ["1000 µF 16 V kondansatör (1 yedek) + 1 kΩ direnç paketi", 1, 12.00, "Robocombo; 2 kΩ = iki 1 kΩ seri"],
+    ["Klemensli DC dişi jak 5,5×2,1", 1, 16.00, "Robocombo, 7–16 TL"],
+    ["M3 cıvata-somun seti (240 adet; tutucu için M3×20)", 1, 180.00, "Robocombo"],
+    ["Kargo (Robocombo, 2000 TL altı)", 1, 150.00, "Robocombo"],
+    ["5 V 5 A 25 W priz tipi adaptör (MRW-2505)", 1, 371.95, "Direnç.net (+ kargo)"],
+    ["3D model (Cults3D, 2,85 $)", 1, 135, "Cults3D, kur ~47,3"],
   ];
   const tb = document.getElementById("bom-body");
   let top = 0;
   BOM.forEach(([ad, n, b, k]) => { top += n * b; tb.insertAdjacentHTML("beforeend", `<tr><td>${ad}</td><td class="num">${n}</td><td class="num">${fmt(b, 2)} TL</td><td class="num">${fmt(n * b, 0)} TL</td><td>${k}</td></tr>`); });
-  tb.insertAdjacentHTML("beforeend", `<tr><td>3D baskı (~230 g PLA/PETG, hizmet)</td><td class="num">1</td><td class="num">0,25–6 TL/g</td><td class="num">58–1.380 TL</td><td>Online hizmet / İzmir atölye; 230 g orijinal sayfadaki yorumdan</td></tr>`);
-  document.getElementById("bom-top").textContent = `${fmt(top + 58, 0)} – ${fmt(top + 1380, 0)} TL`;
+  tb.insertAdjacentHTML("beforeend", `<tr><td>3D baskı (~230 g PLA, hizmet)</td><td class="num">1</td><td class="num">teklif</td><td class="num">~500–2.000 TL</td><td>Tahmin: İzmir atölyeleri STL'ye göre teklif veriyor; Armut 2026 ortalaması</td></tr>`);
+  document.getElementById("bom-top").textContent = `${fmt(top + 500, 0)} – ${fmt(top + 2000, 0)} TL`;
 
   // ------------------------------------------------ sekmeler, döngü
   const tabs = [["t-sim", "p-sim"], ["t-kam", "p-kam"], ["t-kal", "p-kal"], ["t-sema", "p-sema"], ["t-bom", "p-bom"]];

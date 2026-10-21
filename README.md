@@ -14,21 +14,44 @@ Masaüstü, 5 eksen + tutucu, 3D baskı gövdeli Arduino kolu. Mekanik How To Me
 
 ---
 
-## 1. Parçalar (~1,9–3,2 bin TL)
+## 1. Parçalar (~2,7–4,2 bin TL)
 
-| Parça | Adet | Birim (KDV dahil) | Nereden |
-|---|---|---|---|
-| MG996R servo, 180°, metal dişli (gövde, omuz, dirsek) | 3 | 162,80 TL | [Komponentci](https://www.komponentci.net/tower-pro-mg996-mg996r-rc-servo-motor-180-pmu4034) · [Robot Sepeti](https://www.robotsepeti.com/tower-pro-mg996-r-servo-motor-180) 182,65 |
-| SG90 mikro servo (bilek dönüş, bilek eğim, tutucu) | 3 | 104,61 TL | [Direnç.net](https://www.direnc.net/sg90-9g-servo-motor-1) |
-| Arduino Uno R3 klon | 1 | 261,36 TL | [Robocombo](https://www.robocombo.com/Arduino-UNO-R3-Klon-Orijinal-USB-Cip-USB-Kablo-Hediye) · [Robolink](https://www.robolinkmarket.com/arduino-uno-r3-klon) 472,50 |
-| HC-05 Bluetooth modülü | 1 | 225,51 TL | [Robotistan](https://www.robotistan.com/hc05-serial-port-bluetooth-module) |
-| 5 V 5 A metal kasa adaptör (servolar için) | 1 | 214,02 TL | [Robocombo](https://www.robocombo.com/5V-5A-SMPS-Metal-Kasali-ACDC-Adaptor-MS-25-5,PR-499.html) |
-| DC jak, jumper kablo, mini breadboard, 1 kΩ + 2 kΩ direnç, 1000 µF kondansatör | – | ~150 TL **(tahmin)** | |
-| M3/M4 cıvata-somun (tutucu), lastik bant (omuz) | – | ~60 TL **(tahmin)** | |
-| 3D model dosyaları | 1 | 2,85 $ ≈ 141 TL | [Cults3D – HowToMechatronics](https://cults3d.com/en/3d-model/various/arduino-based-robot-arm-howtomechatronics) |
-| 3D baskı, ~230 g | – | 0,25–6 TL/g → 58–1.380 TL | Online hizmet ya da İzmir'de bir atölye |
+Fiyatlar 2026-10-22'de ürün sayfalarından okundu (KDV dahil, indirimli fiyat). Stok ve fiyat değişebilir.
 
-230 g baskı miktarı orijinal sayfadaki bir kullanıcı yorumundan; STL'ler gelince `stl/stl_olc.py` gerçek değeri verecek. Fiyatlar 2026-10-19 arama anından, stok değişebilir.
+**Robocombo'dan tek sipariş** (2000 TL altında kargo 150 TL; stok adetleri sayfada görüldüğü gibi):
+
+| Parça | Adet | Birim | Toplam | Not |
+|---|---|---|---|---|
+| [MG996R 180°, metal dişli](https://www.robocombo.com/tower-pro-mg996r-metal-disli-dijital-servo-motor-180-derece) (gövde, omuz, dirsek) | 3 | 200,50 TL | 601,50 TL | stok 49. **360° modelini alma**, sürekli döner, açı tutmaz |
+| [SG90 180°](https://www.robocombo.com/servo-motorlar-15) (bilek dönüş, bilek eğim, tutucu) | 3 | 54,00 TL | 162,00 TL | kategori sayfasından |
+| [Arduino Uno R3 klon, DIP çip, USB kablolu](https://www.robocombo.com/arduino-uno-r3-klon-orijinal-usb-cip-usb-kablo-hediye) | 1 | 296,00 TL | 296,00 TL | stok 193 |
+| [HC-05 Bluetooth (pin çıkışlı)](https://www.robocombo.com/bluetooth-89) | 1 | 149,50 TL | 149,50 TL | kategori sayfasından |
+| [Micro breadboard 170 pin](https://www.robocombo.com/micro-breadboard-170-pin-3399) | 1 | 21,00 TL | 21,00 TL | stok 1352 |
+| [Jumper kablo 40 pin, erkek-erkek 20 cm](https://www.robocombo.com/jumper-kablolar) | 1 | 42,00 TL | 42,00 TL | servo fişleri → Arduino / breadboard |
+| [Jumper kablo 40 pin, dişi-erkek 20 cm](https://www.robocombo.com/jumper-kablolar) | 1 | 45,00 TL | 45,00 TL | HC-05 → Arduino |
+| [1000 µF 16 V kondansatör](https://www.robocombo.com/elektrolitik-kondansator-70) | 2 | 5,00 TL | 10,00 TL | biri yedek |
+| [1 kΩ direnç (10'lu)](https://www.robocombo.com/1K-14W-Direnc-10-Adet,PR-275.html) | 1 | birkaç TL | – | HC-05 bölücü: 1 kΩ ve **iki 1 kΩ seri = 2 kΩ** → RX'e 3,33 V |
+| [Klemensli DC dişi jak 5,5×2,1](https://www.robocombo.com/Klemens-Cikisli-Disi-DC-Barrel-Soket,PR-1067.html) | 1 | 7–16 TL | 16,00 TL | sayfalar arasında stok bilgisi çelişkili |
+| [M3 cıvata-somun seti (240 adet)](https://www.robocombo.com/220-parca-m3-civata-seti) | 1 | 180,00 TL | 180,00 TL | stok 39. HTM tutucuda M4×20 kullanmış ama delikler 3 mm, M3 olur dediği için M3×20 yeter |
+| Kargo | | | 150,00 TL | |
+| **Robocombo toplam** | | | **~1.673 TL** | |
+
+**Ayrıca:**
+
+| Parça | Fiyat | Nereden |
+|---|---|---|
+| 5 V 5 A 25 W **priz tipi** adaptör (Mervesan MRW-2505), kısa devre ve aşırı yük korumalı | 371,95 TL + kargo | [Direnç.net](https://www.direnc.net/priz-tipi-5v-5a-25w-adaptor-mrw-2505). Çıkış jakı ölçüsü sayfada yok: ya satıcıya sor ya da DC tarafında fişi kesip kabloyu doğrudan breadboard / klemense bağla |
+| 3D model dosyaları (Cults3D) | 2,85 $ ≈ 135 TL (kur ~47,3) | [Cults3D – HowToMechatronics](https://cults3d.com/en/3d-model/various/arduino-based-robot-arm-howtomechatronics) |
+| 3D baskı, ~230 g PLA | ~500–2.000 TL **(tahmin)** | İzmir atölyeleri STL'ye bakıp teklif veriyor ([Armut ilanları](https://armut.com/bornova-3d-baski)); Armut'un 2026 ortalaması 1–5 parçalık işler için 500–2.000 TL ([Armut](https://armut.com/fiyatlari/3d-baski_12669)). Gram fiyatı kaynaklarda 0,5–20 TL arasında, tutarsız |
+| Lastik bant (omuz) | – | evde bulunur |
+
+**Değişenler (19 Ekim listesine göre):**
+- MG996R'nin önceki ucuz satıcıları stokta değil: Komponentci (197,91 TL), Robotistan (234,41 TL), Robolink. Robocombo'da stokta.
+- Uno 261 TL'den 296 TL'ye çıktı. SG90 (54 TL) ve HC-05 (149,50 TL) Robocombo'da önceki listeden ucuz.
+- **Önceki adaptör önerisi düzeltildi.** MS-25-5 metal kasalı panel tipi bir güç kaynağı; 220 V kablosu açık vida klemenslerine elle bağlanıyor, hobi projesi için gereksiz bir çarpılma riski. Üstelik stokta yok. Prize takılan hazır adaptör hem güvenli hem pratik.
+- How To Mechatronics 5 V 2 A kaynak kullanmış. 5 A seçmemizin sebebi, üç MG996R'nin aynı anda zorlanınca (her biri 2,5 A'e kadar) adaptörü çökertmemesi.
+
+230 g baskı miktarı orijinal sayfadaki bir kullanıcı yorumundan; STL'ler gelince `stl/stl_olc.py` gerçek değeri verecek.
 
 Servo verileri: MG996R 9,4 kgf·cm @4,8 V, 55 g, durma akımı 2,5 A ([TowerPro veri sayfası](https://courses.ece.cornell.edu/ece5990/ECE5725_Spring2020_Projects/May_15_Demo/Smart%20Lock/W_pp445_yl656/datasheet/MG996R_Tower-Pro.pdf)). SG90 1,2–1,8 kgf·cm, 9 g ([veri sayfası](https://bit.nkust.edu.tw/~csshieh/teach/111A/mc/datasheet/SG90.pdf); yeni listelerde 1,2, muhafazakâr değer bu).
 
@@ -51,7 +74,7 @@ Servo verileri: MG996R 9,4 kgf·cm @4,8 V, 55 g, durma akımı 2,5 A ([TowerPro 
    | D5 / D6 / D7 | Gövde / omuz / dirsek (MG996R) sinyal |
    | D8 / D9 / D10 | Bilek dönüş / bilek eğim / tutucu (SG90) sinyal |
    | D3 | HC-05 TX |
-   | D4 | HC-05 RX, **1 kΩ / 2 kΩ bölücüyle** (RX 3,3 V) |
+   | D4 | HC-05 RX, **1 kΩ / 2 kΩ bölücüyle** (RX 3,3 V; 2 kΩ = iki 1 kΩ seri) |
    | 5V, GND | HC-05 VCC, GND |
    | GND | 5 V adaptörün GND'si (**ortak toprak şart**) |
 
