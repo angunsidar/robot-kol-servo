@@ -57,12 +57,18 @@ BOS = 0.4               # servo gövdesi yan boşluğu (her yan)
 MG_YUZER = 1.5          # MG996R uzun eksende yüzme payı (mil yeri belirsizliği + karşı yatak hizası)
 SG_YUZER = 0.8
 SG_PILOT = 1.7          # SG90 kulak vidası (kutudan çıkan sac vida) pilot deliği
-G_YATAK = 1.0           # çatal levha ↔ yanak, yanak ↔ servo tabanı eksenel boşluk (pulla ayarlanır)
+G_SERVO = 1.0           # servo tabanı ↔ yanak (sabit, servo gövdesine göre)
+G_CATAL_MG = 2.0        # MG çatal B levhası ↔ yanak: horn yüksekliği belirsizliği (±1,5) + pul payı
+G_CATAL_SG = 1.5        # SG çatal B levhası ↔ yanak
 
 # Horn bağlantısı: radyal oluklar (kutudaki plastik kollar M2/M2,5 sac vidayla, metal 25T disk M3 ile)
-HORN_MG = dict(merkez=8.5, en=3.4, r0=5.6, r1=18.0, acilar=(45, 135, 225, 315))
-HORN_MG_J1 = dict(merkez=8.5, en=3.4, r0=5.6, r1=15.0, acilar=(0, 180, 270))   # +y tarafı J2 kulak levhasının altı
-HORN_SG = dict(merkez=7.5, en=2.2, r0=4.2, r1=15.0, acilar=(0, 90, 180, 270))
+# r0: oluk ucu ↔ merkez delik / havşa arası ≥ 1,2 mm et. Oluk açıları her parçanın baskı yönüne göre (pahlı uçtan uzak).
+HORN_MG = dict(merkez=8.5, en=3.4, r0=9.0, r1=13.5, acilar=(45, 135, 315), havsa=(12.0, 1.2))       # üst kol (J2)
+HORN_MG_ON = dict(merkez=8.5, en=3.4, r0=9.0, r1=13.5, acilar=(45, 90, 270, 315), havsa=(12.0, 1.2))  # ön kol (J3)
+HORN_MG_J1 = dict(merkez=8.5, en=3.4, r0=7.5, r1=15.0, acilar=(0, 180, 270), havsa=None)  # +y: J2 kulak levhası
+HORN_SG = dict(merkez=5.5, en=2.2, r0=7.0, r1=15.0, acilar=(0, 90, 180, 270), havsa=(9.0, 1.0))
+HORN_SG_TUT = dict(HORN_SG, acilar=(90, 180, 270))   # tutucu tabanı: +X'te dişli B sütunu (tornavida erişimi)
+# havsa: horn göbeği için iç yüzde (Ø, derinlik) — göbek çıkıntılıysa levha yine kollara oturur
 
 # ======================= KİNEMATİK ÖLÇÜLER =======================
 # (sim/servo_model.py Olcu ile aynı olmalı — kontrol.py denetler)
@@ -90,28 +96,34 @@ DISK_Z1 = DISK_Z0 + DISK_T
 
 # Çatal eklem modülü (J2, J3 aynı): horn +y tarafında, karşı yatak −y tarafında.
 WI_MG = 60.0            # çatal iç açıklığı (J1 merkez vidasına erişim için kulak levhası y ≥ 4 olmalı)
+# Üst kol / ön kol yan yatırılarak basılır (x yukarı): tablaya bakan yüz düz, uçlar 45° pahlı (baski.py)
 T_CATAL = 5.0           # çatal levha kalınlığı
 T_KULAK = 5.0           # kulak levhası kalınlığı
 Y_HORN = WI_MG / 2                                    # horn dış yüzü = çatal A iç yüzü
 Y_SERVO_TABAN = Y_HORN - MG["HORN_UST"]               # servo tabanı (−17,6)
 Y_KULAK = Y_SERVO_TABAN + MG["KULAK_Z"]               # kulak alt yüzü (9,0)
-Y_YANAK = (-WI_MG / 2 + G_YATAK, Y_SERVO_TABAN - G_YATAK)   # karşı yatak yanağı (−29 .. −18,6)
+T_YANAK_MG = 6.0        # yanak: somun kanalı (2,7) iki yanında 1,65 mm et; servo tabanıyla arada boşluk kalır
+Y_YANAK = (-WI_MG / 2 + G_CATAL_MG, -WI_MG / 2 + G_CATAL_MG + T_YANAK_MG)   # karşı yatak yanağı (−28 .. −22)
 CATAL_A = (Y_HORN, Y_HORN + T_CATAL)
 CATAL_B = (-WI_MG / 2 - T_CATAL, -WI_MG / 2)
-CATAL_EN = 24.0         # çatal levha genişliği (kol düzleminde)
-CATAL_A_R = 22.0        # horn diski
-CATAL_B_R = 12.0
-KOPRU_R = (28.0, 36.0)  # çatal köprüsü (eksenden radyal)
+UST_X = (-17.0, 17.0)   # üst kolun yanal (x) aralığı: bütün elemanlar aynı → yan yatık baskıda düz taban
+ON_X = (-9.5, 17.0)     # ön kol: J5 ucu ±9,5 olmak zorunda (dönüş servosu süpürmesi) → tablaya bakan yüz −9,5
+CATAL_R = 17.0          # çatal levha uç yarıçapı
+UST_B_BOY = L2 - 30.0   # üst kol B levhası J3'ün 30 mm altında biter (ön kol çatal ucu r ≤ 17 + pay)
+KOPRU_R = (28.0, 33.0)  # çatal köprüsü (eksenden radyal)
+HAFIF_PAY = 6.0         # hafifletme penceresi ↔ levha kenarı / köprü arası et
 KULAK_LEVHA_R = 24.0    # kulak levhasının eklem çevresindeki yuvarlatması (köprü 28'den başlar)
+YANAK_UST = 10.0        # yan yatık basılan yanağın eksenden üst kesiği (düz)
 
 # ======================= ÖN KOL + J5 (SG90 çatal) =======================
-WI_SG = 38.5
 T_CATAL_SG = 3.5
 T_KULAK_SG = 3.5
+T_YANAK_SG = 6.0        # somun kanalı (2,7) iki yanında ≥ 1,6 mm et
+WI_SG = SG["HORN_UST"] + G_SERVO + T_YANAK_SG + G_CATAL_SG    # 40
 Y_HORN5 = WI_SG / 2                                   # 19,25
 Y_SERVO5_TABAN = Y_HORN5 - SG["HORN_UST"]             # −12,25
 Y_KULAK5 = Y_SERVO5_TABAN + SG["KULAK_Z"]             # 3,65
-Y_YANAK5 = (-WI_SG / 2 + G_YATAK, Y_SERVO5_TABAN - G_YATAK)   # −18,25 .. −13,25
+Y_YANAK5 = (-WI_SG / 2 + G_CATAL_SG, Y_SERVO5_TABAN - G_SERVO)   # −18,5 .. −12,5
 CATAL5_A = (Y_HORN5, Y_HORN5 + T_CATAL_SG)
 CATAL5_B = (-WI_SG / 2 - T_CATAL_SG, -WI_SG / 2)
 ONKOL_KUTU_YAN = 9.5    # ön kol kutu kirişi yarı eni
@@ -120,9 +132,8 @@ ONKOL_UC_R = 13.0       # J5 tutucunun ön ucu (bilek dönüş servosu r0'dan ba
 
 # ======================= BİLEK (J5 → J4 dönüş servosu) =======================
 R0_DONUS = 15.0         # J5 ekseni → dönüş servosu tabanı (alet ekseni boyunca)
-BILEK_EN = 9.0          # bilek çatal levhası yarı eni
-BILEK_A_R = 18.0
-BILEK_B_R = 10.0
+BILEK_A_EN = 18.0       # bilek A levhası yarı eni = uç yarıçapı (baskıda genişleyen çıkıntı yok)
+BILEK_B_EN = 10.0
 T_DONUS_KULAK = 3.5
 T_DONUS_KULAK_Z = R0_DONUS + SG["KULAK_Z"]            # dönüş servosu kulak alt yüzü (alet ekseninde)
 T_DONUS_HORN = R0_DONUS + SG["HORN_UST"]              # tutucu tabanı alt yüzü

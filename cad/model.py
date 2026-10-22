@@ -158,6 +158,79 @@ def tarama(o, ad, eklem_i, degerler, sabit, gruplar, phi0, tut=35.0):
     return hatalar, en_dar
 
 
+# ----------------------------------------------------------------- tornavida erişimi
+def _yol(eksen, nokta, a0, a1, r):
+    """Tornavida yolu: eksen ('x'/'y'/'z', ±) boyunca a0 → a1, verilen noktadan (diğer iki koordinat)."""
+    e = eksen[-1]
+    c = {"x": (nokta[1], nokta[2]), "y": (nokta[0], nokta[2]), "z": (nokta[0], nokta[1])}[e]
+    return P.sil(e, r, (min(a0, a1), max(a0, a1)), c)
+
+
+def _oluk_noktalari(desen):
+    """Her oluğun iç ucu, ortası ve dış ucu (vida bu aralıkta herhangi bir yerde olabilir)."""
+    r0, r1 = desen["r0"], desen["r1"]
+    return [(a, r) for a in desen["acilar"] for r in (r0, (r0 + r1) / 2, r1)]
+
+
+def erisim_listesi():
+    """(vida, gövde, yol katısı (gövde çerçevesinde), o adımda takılı olup engel olabilecek öğeler).
+    Montaj sırası cad/README.md ile aynı. Tornavida + vida başı için Ø6 (SG vidaları için Ø4,5)."""
+    MG, SG = G.MG, G.SG
+    L = []
+    # 2) J1 merkez vidası ve horn vidaları: gövde diski takılıyken, J2 servosu henüz yok
+    L.append(("J1 horn merkez vidası", 1, _yol("z", (0, 0, 0), G.J1_HORN_UST, 260, 3.0), {"govde"}))
+    for a, r in _oluk_noktalari(G.HORN_MG_J1):
+        n = (r * math.cos(math.radians(a)), r * math.sin(math.radians(a)), 0)
+        L.append((f"J1 horn vidası ({a}°, r{r:.1f})", 1, _yol("z", n, G.DISK_Z1, 260, 3.0), {"govde"}))
+    # 3) J2 kulak vidaları (+y'den), sonra J2 horn merkez vidası (A levhası deliğinden)
+    for xs, ys in P.servo_kulak_delikleri(MG):
+        L.append((f"J2 kulak vidası ({ys:+.0f}, {xs:+.1f})", 1,
+                  _yol("y", (ys, 0, G.H0 + xs), G.Y_KULAK + MG["KULAK_T"], 200, 3.0), {"govde", "servo_J2"}))
+    L.append(("J2 horn merkez vidası", 2, _yol("y", (0, 0, 0), G.Y_HORN, 200, 3.0), {"ust_kol", "govde"}))
+    L.append(("J2 burç cıvatası", 1, _yol("y", (0, 0, G.H0), G.CATAL_B[0] - 0.3, -200, 3.0), {"ust_kol", "govde"}))
+    for xs, ys in P.servo_kulak_delikleri(MG):
+        L.append((f"J3 kulak vidası ({ys:+.0f}, {xs:+.1f})", 2,
+                  _yol("y", (ys, 0, G.L2 + xs), G.Y_KULAK + MG["KULAK_T"], 200, 3.0), {"ust_kol", "servo_J3"}))
+    L.append(("J3 horn merkez vidası", 3, _yol("y", (0, 0, 0), G.Y_HORN, 200, 3.0), {"on_kol", "ust_kol"}))
+    L.append(("J3 burç cıvatası", 2, _yol("y", (0, 0, G.L2), G.CATAL_B[0] - 0.3, -200, 3.0), {"on_kol", "ust_kol"}))
+    for xs, ys in P.servo_kulak_delikleri(SG):
+        L.append((f"J5 kulak vidası ({xs:+.1f})", 3,
+                  _yol("y", (ys, 0, G.L3 + xs), G.Y_KULAK5 + SG["KULAK_T"], 200, 2.25), {"on_kol", "servo_J5"}))
+    L.append(("J5 horn merkez vidası", 4, _yol("y", (0, 0, 0), G.Y_HORN5, 200, 2.25), {"bilek", "on_kol"}))
+    L.append(("J5 burç cıvatası", 3, _yol("y", (0, 0, G.L3), G.CATAL5_B[0] - 0.3, -200, 3.0), {"bilek", "on_kol"}))
+    # 6) dönüş servosu kulak vidaları (+z'den, tutucu yokken), tutucu gövdesi merkez + horn vidaları
+    for xs, ys in P.servo_kulak_delikleri(SG):
+        L.append((f"J4 kulak vidası ({xs:+.1f})", 4,
+                  _yol("z", (xs, ys, 0), G.T_DONUS_KULAK_Z + SG["KULAK_T"], 200, 2.25), {"bilek", "servo_J4"}))
+    L.append(("J4 horn merkez vidası", 5, _yol("z", (0, 0, 0), G.TUT_TABAN_T, 200, 2.25), {"tutucu_govde"}))
+    for a, r in _oluk_noktalari(G.HORN_SG_TUT):
+        n = (r * math.cos(math.radians(a)), r * math.sin(math.radians(a)), 0)
+        L.append((f"J4 horn vidası ({a}°, r{r:.1f})", 5, _yol("z", n, G.TUT_TABAN_T, 200, 2.25), {"tutucu_govde"}))
+    # 7) tutucu servosu kulak vidaları (+Y'den), dişli B cıvatası, A çenesinin horn vidası
+    c2 = G.DIS_C / 2
+    for xs, ys in P.servo_kulak_delikleri(SG):
+        L.append((f"Tutucu kulak vidası ({xs:+.1f})", 5,
+                  _yol("y", (-c2 - ys, 0, G.Z_SERVO_MIL - xs), G.Y_TUT_KULAK + SG["KULAK_T"], 200, 2.25),
+                  {"tutucu_govde", "servo_tutucu"}))
+    L.append(("Dişli B cıvatası", 5, _yol("y", (c2, 0, G.Z_SERVO_MIL), G.Y_DISLI[1] + 0.3, 200, 3.0),
+              {"tutucu_govde", "cene_A", "cene_B", "burc_tutucu"}))
+    L.append(("Çene A horn merkez vidası", 6, _yol("y", (0, 0, 0), G.Y_DISLI[0], 200, 2.25), {"cene_A", "cene_B"}))
+    return L
+
+
+def erisim_kontrol(o, phi0):
+    T = cerceveler([0, 0, 0, 0, 0], G.TUT_SERVO_KAPALI, phi0)
+    oo = {ad: k for ad, g, k, tur in konumla(o, T)}
+    hatalar = []
+    for ad, g, yol, engel in erisim_listesi():
+        y = yol.moved(T[g])
+        for e in engel:
+            v = ortak_hacim(y, oo[e])
+            if v > ESIK_MM3:
+                hatalar.append((ad, e, v))
+    return hatalar
+
+
 # ----------------------------------------------------------------- çene açısı
 def ped_kati(taraf):
     h = G.CENE_EN / 2
@@ -235,6 +308,14 @@ def main():
     if not ic:
         print("  [GEÇTİ] gövde içinde çakışma yok")
 
+    print("\n=== Tornavida erişimi (montaj sırasıyla) ===")
+    er = erisim_kontrol(o, phi0)
+    n_yol = len(erisim_listesi())
+    for x in er:
+        print(f"  [KALDI] {x[0]}: yol {x[1]} ile kesişiyor ({x[2]:.0f} mm³)")
+    if not er:
+        print(f"  [GEÇTİ] {n_yol} vidanın hepsine tornavida ulaşıyor")
+
     adim_mg, adim_sg = (15, 30) if a.hizli else (5, 10)
     lim = [(-90, 90), (-75, 75), (-80, 80), (-90, 90), (-90, 90)]   # servo sınırlarından (90 ± ...)
     def rng(lo, hi, s):
@@ -253,8 +334,8 @@ def main():
         ("Tutucu", None, rng(G.TUT_SERVO_MIN, G.TUT_SERVO_MAX, adim_sg), sifir, ({5}, {6, 7})),
         ("Tutucu (çene ↔ çene)", None, rng(G.TUT_SERVO_MIN, G.TUT_SERVO_MAX, adim_sg), sifir, ({6}, {7})),
     ]
-    rapor = {"phi0": phi0, "agiz_mm": bos, "L4": L4, "ic": ic, "taramalar": {}}
-    toplam_hata = len(ic)
+    rapor = {"phi0": phi0, "agiz_mm": bos, "L4": L4, "ic": ic, "erisim": er, "taramalar": {}}
+    toplam_hata = len(ic) + len(er)
     for ad, ei, deg, sabit, gr in taramalar:
         t1 = time.time()
         h, dar = tarama(o, ad, ei, deg, sabit, gr, phi0)

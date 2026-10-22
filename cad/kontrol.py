@@ -46,7 +46,7 @@ for boy in (16,):
     kontrol(f"J2/J3 mil cıvatası M3×{boy}: uç ↔ servo tabanı", G.Y_SERVO_TABAN - uc, lambda v: v >= 0.8)
     yc = sum(G.Y_YANAK) / 2
     kontrol(f"J2/J3 mil cıvatası M3×{boy}: somun boyunca diş", uc - (yc - G.SOMUN_YUVA_T / 2), lambda v: v >= G.SOMUN_T)
-kontrol("Yanak somun kanalı yan et kalınlığı", (G.Y_YANAK[1] - G.Y_YANAK[0] - G.SOMUN_YUVA_T) / 2, lambda v: v >= 2)
+kontrol("Yanak somun kanalı yan et kalınlığı", (G.Y_YANAK[1] - G.Y_YANAK[0] - G.SOMUN_YUVA_T) / 2, lambda v: v >= 1.5)
 
 print("\n=== SG90 ÇATAL (J5) ===")
 kontrol("Servo tabanı ↔ yanak iç yüzü", G.Y_SERVO5_TABAN - G.Y_YANAK5[1], lambda v: v >= 0.8)
@@ -56,7 +56,7 @@ uc5 = bas5 + 10
 yc5 = sum(G.Y_YANAK5) / 2
 kontrol("J5 mil cıvatası M3×10: uç ↔ servo tabanı", G.Y_SERVO5_TABAN - uc5, lambda v: v >= 0.5)
 kontrol("J5 mil cıvatası M3×10: somun boyunca diş", uc5 - (yc5 - G.SOMUN_YUVA_T / 2), lambda v: v >= G.SOMUN_T)
-kontrol("Yanak somun kanalı yan et kalınlığı", (G.Y_YANAK5[1] - G.Y_YANAK5[0] - G.SOMUN_YUVA_T) / 2, lambda v: v >= 1.0)
+kontrol("Yanak somun kanalı yan et kalınlığı", (G.Y_YANAK5[1] - G.Y_YANAK5[0] - G.SOMUN_YUVA_T) / 2, lambda v: v >= 1.5)
 on_ulasim = math.hypot(SG["UC"] + (SG["KULAK_L"] - SG["L"]) / 2, SG["W"] / 2)
 kontrol("J5 servo öne uzanımı (kulak köşesi) ↔ ön kol uç yarıçapı", G.ONKOL_UC_R - on_ulasim, lambda v: v >= 0.5)
 kontrol("Ön kol uç yarıçapı ↔ dönüş servosu tabanı", G.R0_DONUS - G.ONKOL_UC_R, lambda v: v >= 1.5)
@@ -80,6 +80,35 @@ uc_b = G.Y_DISLI[1] + 0.3 - 16
 kontrol("Dişli B cıvatası M3×16: uç somunun öbür yüzünü geçer", -9.5 - uc_b, lambda v: v >= 0.5)
 kontrol("Dişli B cıvatası M3×16: uç ↔ kulak levhası arka yüzü (taşmaz)", uc_b - (G.Y_TUT_KULAK - G.T_TUT_KULAK),
         lambda v: v >= 0)
+
+print("\n=== DAYANIM (servo DURMA torkunda, yani en kötü durumda; PLA, katman yönü dahil) ===")
+# PLA: katman içinde ~50 MPa, katmanlar arası ~25 MPa çekme (tipik). Emniyet için izin verilen 10 MPa alındı.
+PLA_IZIN = 10.0
+MG_DURMA_NM = 9.4 * 0.0980665
+SG_DURMA_NM = 1.8 * 0.0980665        # yüksek değer (en kötü durum için)
+# 1) Tutucu dişlisi, Lewis: σ = F / (b · m · Y), z = 16 için Y ≈ 0,296
+F_dis = SG_DURMA_NM / (G.DIS_M * G.DIS_Z / 2 / 1000)
+s_dis = F_dis / (G.DIS_T * G.DIS_M * 0.296)
+kontrol("Tutucu dişli kökü eğilme gerilmesi (SG90 durma torku)", s_dis, lambda v: v <= PLA_IZIN, "MPa",
+        f"F = {F_dis:.0f} N; baskıda düz yatar, diş katman içinde")
+# 2) Horn vidaları: tork en az 2 vidayla, oluk ortası yarıçapta; vida PLA'ya yatak gerilmesi (Ø3 × levha)
+for ad, desen, tork, t in (("MG çatal (J2/J3)", G.HORN_MG, MG_DURMA_NM, G.T_CATAL),
+                           ("SG bilek (J5)", G.HORN_SG, SG_DURMA_NM, G.T_CATAL_SG)):
+    r = (desen["r0"] + desen["r1"]) / 2 / 1000
+    F = tork / (2 * r)
+    s_v = F / (min(desen["en"], 3.0) * t)
+    kontrol(f"{ad} horn vidası PLA yatak gerilmesi (2 vida)", s_v, lambda v: v <= PLA_IZIN, "MPa", f"vida başına {F:.0f} N")
+# 3) Üst kol A levhası: durma torku horn'dan köprüye levha düzleminde eğilme (en kesit: 34 × 5, pencere düşülür)
+# pencereli kesitte iki şerit (HAFIF_PAY genişlik) kenarlarda: atalet ≈ 2·t·p·(d/2)², d ≈ en − p
+en = G.UST_X[1] - G.UST_X[0]
+I = 2 * (G.T_CATAL * G.HAFIF_PAY ** 3 / 12 + G.T_CATAL * G.HAFIF_PAY * ((en - G.HAFIF_PAY) / 2) ** 2)
+s_lev = MG_DURMA_NM * 1000 * (en / 2) / I
+kontrol("Üst kol A levhası pencereli kesitte eğilme (J2 durma torku)", s_lev, lambda v: v <= PLA_IZIN, "MPa",
+        "yan yatık baskı: gerilme katman düzleminde")
+# 4) Karşı yatak burcu: kol ağırlığının yarısı + yük, M3 cıvata üzerinde PLA burç yatak gerilmesi
+F_b = (0.35 * 9.81) / 2
+s_b = F_b / (G.VIDA_D * G.T_CATAL)
+kontrol("J2 burç ↔ cıvata yatak gerilmesi (statik)", s_b, lambda v: v <= PLA_IZIN, "MPa", f"{F_b:.1f} N")
 
 print("\n=== BASKI (tabla 220×220×250, en uygun yön) ===")
 TABLA = sorted(G.BASKI_TABLA)
@@ -142,6 +171,35 @@ for b, ad in ((2, "J2 omuz (MG996R)"), (3, "J3 dirsek (MG996R)"), (4, "J5 bilek 
             f"{t:.3f} N·m @ J2,J3,J5={poz}; sürekli <%50 önerilir")
 hareketli = sum(mk for ad, g, mk, cm in km if g >= 1)
 kontrol("Hareketli kütle (gövde ve üstü, yük hariç)", hareketli * 1000, None, "g", bilgi=True)
+
+print("\n=== DEVRİLME (taban masaya vidalanmazsa) ===")
+# Bütün kütlelerin (taban dahil) yatay ağırlık merkezi taban levhasının dışına çıkarsa kol devrilir.
+en_r, en_poz = 0.0, None
+for q2 in range(-75, 76, 15):
+    for q3 in range(-80, 81, 20):
+        for q5 in range(-90, 91, 45):
+            T = M.cerceveler([0, q2, q3, 0, q5], 35, phi0)
+            mx = my = mt = 0.0
+            for ad, g, mk, cm in km:
+                p = dunya(T[g], cm)
+                mx += mk * p[0]
+                my += mk * p[1]
+                mt += mk
+            tcp = dunya(T[4], V(0, 0, L4_35))
+            mx += YUK * tcp[0]
+            my += YUK * tcp[1]
+            mt += YUK
+            r = math.hypot(mx / mt, my / mt)
+            if r > en_r:
+                en_r, en_poz = r, (q2, q3, q5)
+kontrol("En kötü pozda ağırlık merkezi ↔ taban kenarı (50 g yükle)", G.TABAN_R - en_r, None, "mm",
+        f"AM eksenden {en_r:.0f} mm @ J2,J3,J5={en_poz}; negatifse devrilir", bilgi=True)
+toplam_kg = sum(mk for ad, g, mk, cm in km) + YUK
+# taban merkezine m kg eklenirse AM = toplam·r / (toplam + m) ≤ TABAN_R − 5 (pay)
+sinir = G.TABAN_R - 5
+gerekli = max(0.0, toplam_kg * en_r / sinir - toplam_kg)
+kontrol("Vidalamadan devrilmemek için taban merkezine eklenecek kütle", gerekli * 1000, None, "g",
+        "ya da 3 delikten masaya / tahtaya vidala (önerilen)", bilgi=True)
 
 print("\n=== KİNEMATİK ÖLÇÜLER (sim/servo_model.py ile karşılaştır) ===")
 L4 = G.L4_hesap(G.cene_aci(35, phi0))

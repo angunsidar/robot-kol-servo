@@ -4,7 +4,7 @@
   const R = Math.PI / 180;
   const G = 9.81;
   const MG996R_KG = 0.055, SG90_KG = 0.009;
-  const PARCA = { ust_kol: 0.050, on_kol: 0.030, bilek: 0.008, tutucu: 0.012 };   // cad/ tasarımından
+  const PARCA = { ust_kol: 0.050, on_kol: 0.027, bilek: 0.009, tutucu: 0.014 };   // cad/ tasarımından
   // Montaj kalibrasyonu: servo = 90 + yön · eklem + ofset. Varsayılanlar servo_model.py ile aynı; sayfa
   // kalibrasyon sekmesinden kalibrasyon() ile değiştirir (eklem 0° = referans pozu, bkz. README).
   const SERVO_YON = [1, 1, 1, 1, 1, 1], SERVO_OFSET = [0, 0, 0, 0, 0, 0];

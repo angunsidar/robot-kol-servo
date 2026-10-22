@@ -31,7 +31,7 @@ SERVO_MAX = [180, 165, 170, 180, 180, 110]
 
 # Kütleler [kg]: servolar veri sayfasından; baskı parçaları tasarımdan (hacim × PLA 1,24 g/cm³ × %60 doluluk)
 MG996R_KG, SG90_KG = 0.055, 0.009
-PARCA = dict(ust_kol=0.050, on_kol=0.030, bilek=0.008, tutucu=0.012)
+PARCA = dict(ust_kol=0.050, on_kol=0.027, bilek=0.009, tutucu=0.014)
 # Tutucu ağzı (iki ped arası, mm) — servo açısına göre, cad/sim_mesh.py tablosundan (dişli 1:1 açısal çene)
 TUTUCU_AGIZ_MM = [(20, 1.0), (25, 7.5), (30, 12.6), (35, 16.9), (40, 21.3), (45, 25.6), (50, 30.0), (55, 34.3),
                   (60, 38.5), (65, 42.6), (70, 46.6), (75, 50.4), (80, 54.0), (85, 57.4), (90, 60.5), (95, 63.3),

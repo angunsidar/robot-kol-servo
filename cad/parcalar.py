@@ -65,9 +65,14 @@ def kes(s, *sekiller):
     return s.clean()
 
 
-def horn_baglanti(eksen, a, desen, merkez=(0.0, 0.0)):
-    """Horn bağlantısı (kesilecek): merkez delik + radyal oluklar. Düzlem açısı 0 = düzlemin 1. koordinatı."""
+def horn_baglanti(eksen, a, desen, merkez=(0.0, 0.0), ic=None):
+    """Horn bağlantısı (kesilecek): merkez delik + radyal oluklar (+ ic=(yüz, +1/−1) verilirse göbek havşası).
+    Düzlem açısı 0 = düzlemin 1. koordinatı (y ekseni için x, z ekseni için x)."""
     s = sil(eksen, desen["merkez"] / 2, a, merkez)
+    if ic and desen.get("havsa"):
+        d, h = desen["havsa"]
+        aralik = (ic[0] - 0.01, ic[0] + h) if ic[1] > 0 else (ic[0] - h, ic[0] + 0.01)
+        s = s.fuse(sil(eksen, d / 2, aralik, merkez))
     r = desen["en"] / 2
     for aci in desen["acilar"]:
         u, v = math.cos(math.radians(aci)), math.sin(math.radians(aci))
@@ -142,90 +147,133 @@ def taban():
     return s.clean()
 
 
+# ----------------------------------------------------------------- baskı dostu levha
+def pah45(s, xa, z_t, uc):
+    """Yan yatık baskı (x = xa tablada): (xa, z_t) noktasından geçen 45° düzlemin tabla tarafını keser.
+    uc='alt': −z yönündeki uç (kalan bölge x + z ≥ xa + z_t); uc='ust': +z ucu (x − z ≥ xa − z_t)."""
+    kesici = kutu((-400, 0), (-400, 400), (-400, 400))
+    kesici = kesici.rotate(V(0, 0, 0), V(0, 1, 0), -45 if uc == "alt" else 45).translate(V(xa, 0, z_t))
+    return s.cut(kesici)
+
+
+def uc_levha(y, x, z0, z1, R, uc, pah=True):
+    """y'ye dik levha: x aralığında, z0..z1 gövde + yuvarlak uç (R, merkez (0, z0) 'alt' / (0, z1) 'ust').
+    pah=True: tabla tarafındaki (x = x[0]) çeyrek yay yerine 45° pah (desteksiz basılır)."""
+    xa, xb = x
+    gov = kutu(x, y, (z0, z1))
+    zc = z0 if uc == "alt" else z1
+    zr = (zc - R - 1, zc) if uc == "alt" else (zc, zc + R + 1)
+    s = gov.fuse(sil("y", R, y, (0, zc)).intersect(kutu(x, (y[0] - 1, y[1] + 1), zr)))
+    if pah:
+        d = math.sqrt(max(R * R - xa * xa, 0.0))
+        s = pah45(s, xa, zc - d if uc == "alt" else zc + d, uc)
+    return s
+
+
 # ----------------------------------------------------------------- ortak: MG çatal eklem tutucusu
-def _mg_tutucu(z_alt, z_eksen, yanak_x=12.0, kulak_x=17.0, ust_r=G.KULAK_LEVHA_R):
+def _mg_tutucu(z_alt, z_eksen, kulak_x=(-17.0, 17.0), yanak_x=(-12.0, 12.0), ust_r=G.KULAK_LEVHA_R, pah=False,
+               sarkma=0.0):
     """MG996R tutucu: kulak levhası (pencere + pilot delikler) + karşı yatak yanağı.
-    Servo: Xs → +z (gövde aşağı sarkar), Zs → +y. z_eksen = eklem ekseni z'si (çerçevede)."""
+    Servo: Xs → +z (gövde aşağı sarkar), Zs → +y. z_eksen = eklem ekseni z'si (çerçevede).
+    pah=True (yan yatık baskı): kulak levhası ucu pahlı, yanak düz kesik (yuvarlak uç yok → ince şerit kalmaz).
+    sarkma: pencerenin baskıda köprü olan (+x) kenarına ek boşluk."""
     S = G.MG
     y0, y1 = G.Y_KULAK - G.T_KULAK, G.Y_KULAK
-    lev = kutu((-kulak_x, kulak_x), (y0, y1), (z_alt, z_eksen))
-    lev = lev.fuse(sil("y", ust_r, (y0, y1), (0, z_eksen)).intersect(kutu((-kulak_x, kulak_x), (y0, y1), (z_eksen, z_eksen + ust_r + 1))))
+    lev = uc_levha((y0, y1), kulak_x, z_alt, z_eksen, ust_r, "ust", pah)
     x0, x1 = -(S["L"] - S["UC"]), S["UC"]
     w = S["W"] / 2 + G.BOS
-    lev = lev.cut(kutu((-w, w), (y0 - 1, y1 + 1), (z_eksen + x0 - G.BOS, z_eksen + x1 + G.BOS)))
+    lev = lev.cut(kutu((-w, w + sarkma), (y0 - 1, y1 + 1), (z_eksen + x0 - G.BOS, z_eksen + x1 + G.BOS)))
     for xs, ys in servo_kulak_delikleri(S):      # Ys → x, Xs → z
         lev = lev.cut(sil("y", 1.3, (y0 - 1, y1 + 1), (ys, z_eksen + xs)))
     # yanak + karşı yatak: burç cıvatası için z yönünde oluk (±1,5), somun kanalı üstten
     ya, yb = G.Y_YANAK
-    yan = kutu((-yanak_x, yanak_x), (ya, yb), (z_alt, z_eksen)).fuse(sil("y", yanak_x, (ya, yb), (0, z_eksen)))
+    if pah:
+        yan = kutu(yanak_x, (ya, yb), (z_alt, z_eksen + G.YANAK_UST))   # düz uçlu: köşe r = √(17² + 10²) ≈ 19,7
+    else:
+        yan = uc_levha((ya, yb), yanak_x, z_alt, z_eksen, max(-yanak_x[0], yanak_x[1]), "ust", False)
     yan = yan.cut(oluk("y", G.VIDA_D / 2, (ya - 1, yb + 1), (0, z_eksen - 1.5), (0, z_eksen + 1.5)))
     yc = (ya + yb) / 2
     yan = yan.cut(kutu((-G.SOMUN_YUVA / 2, G.SOMUN_YUVA / 2), (yc - G.SOMUN_YUVA_T / 2, yc + G.SOMUN_YUVA_T / 2),
-                       (z_eksen - 1.5 - G.SOMUN_YUVA / 2 - 0.3, z_eksen + yanak_x + 1)))
+                       (z_eksen - 1.5 - G.SOMUN_YUVA / 2 - 0.3, z_eksen + 30)))
     return lev, yan
 
 
-def _mg_catal(z_kopru=G.KOPRU_R, a_boy=None, b_boy=None):
-    """Sürülen çatal (eksen orijinde, kol +z): A levhası horn diskli, B levhası burç delikli, köprü."""
-    e = G.CATAL_EN / 2
+def _mg_catal(x, desen, a_boy=None, b_boy=None, z_kopru=G.KOPRU_R):
+    """Sürülen çatal (eksen orijinde, kol +z), yan yatık baskı için x aralığı sabit, uçlar pahlı.
+    A levhası horn bağlantılı (+ iç yüzde göbek havşası), B levhası burç delikli, aralarında köprü."""
     a_boy = a_boy or z_kopru[1]
     b_boy = b_boy or z_kopru[1]
-    A = sil("y", G.CATAL_A_R, G.CATAL_A).fuse(kutu((-e, e), G.CATAL_A, (0, a_boy)))
-    A = A.cut(horn_baglanti("y", (G.CATAL_A[0] - 1, G.CATAL_A[1] + 1), G.HORN_MG))
-    B = sil("y", G.CATAL_B_R, G.CATAL_B).fuse(kutu((-e, e), G.CATAL_B, (0, b_boy)))
+    A = uc_levha(G.CATAL_A, x, 0, a_boy, G.CATAL_R, "alt")
+    A = A.cut(horn_baglanti("y", (G.CATAL_A[0] - 1, G.CATAL_A[1] + 1), desen, ic=(G.CATAL_A[0], +1)))
+    B = uc_levha(G.CATAL_B, x, 0, b_boy, G.CATAL_R, "alt")
     B = B.cut(sil("y", G.BURC_DELIK / 2, (G.CATAL_B[0] - 1, G.CATAL_B[1] + 1)))
-    K = kutu((-e, e), (G.CATAL_B[1] - 0.01, G.CATAL_A[0] + 0.01), z_kopru)
+    K = kutu(x, (G.CATAL_B[1] - 0.01, G.CATAL_A[0] + 0.01), z_kopru)
     return birlesik(A, B, K)
 
 
-# ----------------------------------------------------------------- GÖVDE (J1 üstü, J2 tutucu)
+# ----------------------------------------------------------------- GÖVDE (J1 üstü, J2 tutucu) — disk tablada
 def govde():
     disk = sil("z", G.DISK_R, (G.DISK_Z0, G.DISK_Z1))
     disk = disk.cut(horn_baglanti("z", (G.DISK_Z0 - 1, G.DISK_Z1 + 1), G.HORN_MG_J1))
-    lev, yan = _mg_tutucu(G.DISK_Z1 - 0.01, G.H0, kulak_x=22.0)
+    lev, yan = _mg_tutucu(G.DISK_Z1 - 0.01, G.H0, kulak_x=(-22.0, 22.0), yanak_x=(-12.0, 12.0))
     return birlesik(disk, lev, yan)
 
 
-# ----------------------------------------------------------------- ÜST KOL (J2 çatalı + J3 tutucu)
-UST_KOPRU2 = (70.0, 76.0)
+# ----------------------------------------------------------------- ÜST KOL (J2 çatalı + J3 tutucu) — yan yatık
+UST_KOPRU2 = (71.0, 76.0)
 
 
 def ust_kol():
     L2 = G.L2
-    e = G.CATAL_EN / 2
-    catal = _mg_catal(a_boy=UST_KOPRU2[1], b_boy=L2 - 17.0)
-    k2 = kutu((-e, e), (G.CATAL_B[1] - 0.01, G.CATAL_A[0] + 0.01), UST_KOPRU2)
-    lev, yan = _mg_tutucu(UST_KOPRU2[0], L2, kulak_x=17.0)
-    dolgu = kutu((-e, e), (G.CATAL_B[1] - 0.01, G.Y_YANAK[0] + 0.01), (UST_KOPRU2[0], L2 - 17.0))
-    return birlesik(catal, k2, lev, yan, dolgu)
+    x = G.UST_X
+    catal = _mg_catal(x, G.HORN_MG, a_boy=UST_KOPRU2[1], b_boy=G.UST_B_BOY)
+    k2 = kutu(x, (G.CATAL_B[1] - 0.01, G.CATAL_A[0] + 0.01), UST_KOPRU2)
+    lev, yan = _mg_tutucu(UST_KOPRU2[0], L2, kulak_x=x, yanak_x=x, pah=True, sarkma=0.4)
+    dolgu = kutu(x, (G.CATAL_B[1] - 0.01, G.Y_YANAK[0] + 0.01), (UST_KOPRU2[0], G.UST_B_BOY))
+    s = birlesik(catal, k2, lev, yan, dolgu)
+    # hafifletme: iki çatal levhasında köprüler arası pencere. Yan yatık baskıda üst kenarı köprü (28 mm),
+    # alt/üst uçları 45° (sivri) → desteksiz
+    p = G.HAFIF_PAY
+    z0, z1 = G.KOPRU_R[1] + p, UST_KOPRU2[0] - p
+    xa, xb = x[0] + p, x[1] - p
+    for y in (G.CATAL_A, G.CATAL_B):
+        s = s.cut(_hafif_pencere(y, (xa, xb), (z0, z1)))
+    return s.clean()
 
 
-# ----------------------------------------------------------------- ÖN KOL (J3 çatalı + J5 SG90 tutucu)
+def _hafif_pencere(y, x, z):
+    """y'ye dik levhada pencere: dikdörtgen, z uçları 45° sivri (yan yatık baskıda kendini taşır)."""
+    xa, xb = x
+    h = (xb - xa) / 2
+    xc = (xa + xb) / 2
+    pts = [(xa, z[0] + h), (xc, z[0]), (xb, z[0] + h), (xb, z[1] - h), (xc, z[1]), (xa, z[1] - h)]
+    if z[1] - z[0] < 2 * h:
+        pts = [(xc, z[0]), (xb, (z[0] + z[1]) / 2), (xc, z[1]), (xa, (z[0] + z[1]) / 2)]
+    w = cq.Workplane("XY").polyline(pts).close().extrude(y[1] - y[0] + 2).val()
+    # (x, z) → XY'de (x, y=z); X ekseni etrafında +90° → (x, −z, y): y → z
+    return w.rotate(V(0, 0, 0), V(1, 0, 0), 90).translate(V(0, y[1] + 1, 0))
+
+
+# ----------------------------------------------------------------- ÖN KOL (J3 çatalı + J5 SG90 tutucu) — yan yatık
 def on_kol():
     S = G.SG
     L3 = G.L3
-    e = G.CATAL_EN / 2
-    catal = _mg_catal()
-    yk0, yk1 = G.Y_KULAK5 - G.T_KULAK_SG, G.Y_KULAK5          # kulak duvarı (0,15 .. 3,65)
-    ya, yb = G.Y_YANAK5                                          # yanak (−18,25 .. −13,25)
-    b = G.ONKOL_KUTU_YAN
+    x = G.ON_X
+    b = -G.ON_X[0]                                               # J5 ucunda yarı en (9,5)
+    catal = _mg_catal(x, G.HORN_MG_ON)
+    yk0, yk1 = G.Y_KULAK5 - G.T_KULAK_SG, G.Y_KULAK5            # kulak duvarı
+    ya, yb = G.Y_YANAK5                                          # yanak
     z0 = G.KOPRU_R[1] - 0.01
-    # kutu kiriş: iki y duvarı + iki yan duvar
-    kd = kutu((-b, b), (yk0, yk1), (z0, L3)).fuse(sil("y", G.ONKOL_UC_R, (yk0, yk1), (0, L3)).intersect(
-        kutu((-b, b), (yk0, yk1), (L3, L3 + G.ONKOL_UC_R + 1))))
-    yd = kutu((-b, b), (ya, yb), (z0, L3)).fuse(sil("y", b, (ya, yb), (0, L3)))
-    yan_d = [kutu((sx * (b - G.ONKOL_DUVAR), sx * b) if sx > 0 else (-b, -(b - G.ONKOL_DUVAR)), (ya, yk1), (z0, L3 + 8.0))
-             for sx in (1, -1)]
-    # köprüyü kutuya bağlayan dolgu (köprü y ±30, kutu y −18,25..3,65 → köprü zaten tam en)
+    kd = uc_levha((yk0, yk1), (-b, b), z0, L3, G.ONKOL_UC_R, "ust")
+    yd = uc_levha((ya, yb), (-b, b), z0, L3, b, "ust")
+    on_kes = kutu((-b - 1, b + 1), (ya - 1, yk1 + 1), (L3, L3 + 20)).cut(sil("y", G.ONKOL_UC_R, (ya - 2, yk1 + 2), (0, L3)))
+    yan_d = [kutu((b - G.ONKOL_DUVAR, b), (ya, yk1), (z0, L3 + 8.0)).cut(on_kes),
+             kutu((-b, -b + G.ONKOL_DUVAR), (ya, yk1), (z0, L3 + 8.0)).cut(on_kes)]
     s = birlesik(catal, kd, yd, *yan_d)
-    # yan duvarların ön uçları J5 çevresinde r ≤ ONKOL_UC_R kalsın
-    s = s.cut(kutu((-b - 1, b + 1), (ya - 1, yk1 + 1), (L3, L3 + 20)).cut(sil("y", G.ONKOL_UC_R, (ya - 2, yk1 + 2), (0, L3))))
-    # SG90 penceresi (Ys → x, Xs → z)
+    # SG90 penceresi (Ys → x, Xs → z) ve gövdenin geçtiği iç boşluk
     x0, x1 = -(S["L"] - S["UC"]), S["UC"]
     w = S["W"] / 2 + G.BOS
-    s = s.cut(kutu((-w, w), (yk0 - 1, yk1 + 1), (L3 + x0 - G.SG_YUZER, L3 + x1 + G.SG_YUZER)))
-    # servo gövdesinin geçtiği iç boşluk (kulak duvarı ile yanak arası)
-    s = s.cut(kutu((-w, w), (yb, yk0 + 0.01), (L3 + x0 - G.SG_YUZER, L3 + x1 + G.SG_YUZER)))
+    s = s.cut(kutu((-w, w), (yb, yk1 + 1), (L3 + x0 - G.SG_YUZER, L3 + x1 + G.SG_YUZER)))
     for xs, ys in servo_kulak_delikleri(S):
         s = s.cut(sil("y", G.SG_PILOT / 2, (yk0 - 1, yk1 + 1), (ys, L3 + xs)))
     # J5 karşı yatak: z yönünde oluk ±0,8 + somun kanalı önden (z boyunca)
@@ -236,15 +284,15 @@ def on_kol():
     return s.clean()
 
 
-# ----------------------------------------------------------------- BİLEK (J5 çatalı + J4 dönüş servosu)
+# ----------------------------------------------------------------- BİLEK (J5 çatalı + J4 dönüş servosu) — kulak levhası tablada
 def bilek():
     S = G.SG
-    e = G.BILEK_EN
     zk1 = G.T_DONUS_KULAK_Z
     zk0 = zk1 - G.T_DONUS_KULAK
-    A = sil("y", G.BILEK_A_R, G.CATAL5_A).fuse(kutu((-e, e), G.CATAL5_A, (0, zk1)))
-    A = A.cut(horn_baglanti("y", (G.CATAL5_A[0] - 1, G.CATAL5_A[1] + 1), G.HORN_SG))
-    B = sil("y", G.BILEK_B_R, G.CATAL5_B).fuse(kutu((-e, e), G.CATAL5_B, (0, zk1)))
+    ea, eb = G.BILEK_A_EN, G.BILEK_B_EN
+    A = uc_levha(G.CATAL5_A, (-ea, ea), 0, zk1, ea, "alt", pah=False)
+    A = A.cut(horn_baglanti("y", (G.CATAL5_A[0] - 1, G.CATAL5_A[1] + 1), G.HORN_SG, ic=(G.CATAL5_A[0], +1)))
+    B = uc_levha(G.CATAL5_B, (-eb, eb), 0, zk1, eb, "alt", pah=False)
     B = B.cut(sil("y", G.BURC_DELIK / 2, (G.CATAL5_B[0] - 1, G.CATAL5_B[1] + 1)))
     lev = kutu((-24.0, 13.5), (G.CATAL5_B[0], G.CATAL5_A[1]), (zk0, zk1))
     s = birlesik(A, B, lev)
@@ -257,17 +305,20 @@ def bilek():
     return s.clean()
 
 
-# ----------------------------------------------------------------- TUTUCU GÖVDE
+# ----------------------------------------------------------------- TUTUCU GÖVDE — taban levhası tablada
 def tutucu_govde():
     S = G.SG
     c2 = G.DIS_C / 2
     zs = G.Z_SERVO_MIL
     yk1 = G.Y_TUT_KULAK
     yk0 = yk1 - G.T_TUT_KULAK
+    rb = G.TUTUCU_BOSS_R
     taban = kutu((-18.0, 18.0), (yk0, 17.5), (0, G.TUT_TABAN_T))
-    taban = taban.cut(horn_baglanti("z", (-1, G.TUT_TABAN_T + 1), G.HORN_SG))
+    taban = taban.cut(horn_baglanti("z", (-1, G.TUT_TABAN_T + 1), G.HORN_SG_TUT, ic=(0.0, +1)))
     lev = kutu((-24.0, 17.5), (yk0, yk1), (0, 41.0))
-    boss = sil("y", G.TUTUCU_BOSS_R, (yk1 - 0.01, G.Y_BOSS_UST), (c2, zs))
+    # dişli B göbeği + altında tabana inen sütun (yatay silindir havada kalmasın)
+    boss = sil("y", rb, (yk1 - 0.01, G.Y_BOSS_UST), (c2, zs)).fuse(
+        kutu((c2 - rb, c2 + rb), (yk1 - 0.01, G.Y_BOSS_UST), (0, zs)))
     s = birlesik(taban, lev, boss)
     # tutucu servosu: Zs → +Y, Xs → −Z, mil (X = −c/2, Z = zs); Ys → −X
     x0, x1 = -(S["L"] - S["UC"]), S["UC"]
@@ -367,8 +418,8 @@ def burc(boy):
     return sil("z", G.BURC_D / 2, (0, boy)).cut(sil("z", G.VIDA_D / 2, (-1, boy + 1)))
 
 
-BURC_MG = G.G_YATAK + G.T_CATAL + 0.3          # 6,3
-BURC_SG = G.G_YATAK + G.T_CATAL_SG + 0.3       # 4,8
+BURC_MG = G.G_CATAL_MG + G.T_CATAL + 0.3       # 7,3
+BURC_SG = G.G_CATAL_SG + G.T_CATAL_SG + 0.3    # 5,3
 BURC_TUT = G.Y_DISLI[1] + 0.3 - G.Y_BOSS_UST    # 4,6 (göbek üstü → dişli B üstü + 0,3)
 
 

@@ -6,6 +6,7 @@ listelemez, açmaz, değiştirmez. Student planında API kotası var: bir yükle
 
 python onshape_yukle.py            # belge yoksa açar, montajı yükler
 python onshape_yukle.py --test     # yalnızca bağlantıyı dener (1 çağrı)
+python onshape_yukle.py --yeni "Servo Kol v2"   # eskisine dokunmadan yeni belge açıp yükler
 """
 import argparse
 import json
@@ -77,6 +78,7 @@ def durum_yaz(d):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--test", action="store_true")
+    ap.add_argument("--yeni", metavar="AD", help="yeni belge adı (öncekiler durum.json'da kalır)")
     a = ap.parse_args()
     if a.test:
         j = istek("GET", "/users/sessioninfo")
@@ -85,12 +87,16 @@ def main():
     if not os.path.exists(MONTAJ):
         sys.exit("Önce cad/model.py'yi çalıştır (STEP yok).")
     d = durum_oku()
+    eski = d.get("onceki", [])
+    if a.yeni and "did" in d:
+        eski.append({k: d[k] for k in ("did", "wid") if k in d})
+        d = {"onceki": eski}
     if "did" not in d:
         j = istek("POST", "/documents", json={
-            "name": "Servo Kol — basılabilir parçalar",
+            "name": a.yeni or "Servo Kol — basılabilir parçalar",
             "description": "github.com/angunsidar/robot-kol-servo · cad/ klasöründen CadQuery ile üretilir (STEP içe aktarma).",
             "isPublic": False})
-        d = {"did": j["id"], "wid": j["defaultWorkspace"]["id"], "yuklemeler": []}
+        d = {"did": j["id"], "wid": j["defaultWorkspace"]["id"], "yuklemeler": [], "onceki": eski}
         durum_yaz(d)
         print("yeni belge açıldı")
     with open(MONTAJ, "rb") as f:
