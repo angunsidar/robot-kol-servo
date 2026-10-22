@@ -230,7 +230,7 @@ class Istemci(unittest.TestCase):
     def test_sayfa_ile_ayni_hedefler(self):
         # Sayfanın (servo_program.js) ve istemcinin aynı kalibrasyonla aynı servo hedeflerini bulması
         kal = {"yon": [1, -1, 1, 1, -1], "ofset": [3, -4.5, 2, 1, 6], "acik": 100, "kapali": 35}
-        noktalar = [(180, 0, 60, 180), (200, -60, 40, 180), (170, 60, 50, 170), (230, 20, 40, 135)]
+        noktalar = [(180, 0, 60, 180), (200, -60, 40, 180), (170, 60, 70, 170), (230, 20, 40, 135)]   # cad ölçüleri
         js = f"""
 const S=require('./servo_kinematik.js'),P=require('./servo_program.js'),O=S.olcu();
 S.kalibrasyon({kal!r}); const bas=[900,1000,800,900,900,600];

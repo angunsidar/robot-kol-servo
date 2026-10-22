@@ -5,7 +5,8 @@ Eksenler: J1 gövde (dikey eksen) · J2 omuz · J3 dirsek · J4 bilek dönüş �
 Model varsayımı: J4 bilek dönüşü, aletin kendi ekseni etrafında döner (konumu değiştirmez); J2, J3, J5 dikey düzlemde.
 Açılar (eklem): J2 = 0 üst kol dik, + öne; J3 = 0 ön kol üst kolla aynı doğrultuda, + öne/aşağı; J5 = 0 düz, + aşağı.
 
-ÖLÇÜLER TAHMİNDİR (orijinal projede verilmiyor). STL'ler gelince stl_olc.py ile güncellenecek.
+ÖLÇÜLER ve PARÇA KÜTLELERİ kendi tasarımımızdan (cad/geometri.py, cad/kontrol.py). Tasarım değişirse buradaki
+Olcu, PARCA ve TUTUCU_AGIZ_MM de güncellenir (cad/kontrol.py farkı yakalar).
 """
 import math
 from dataclasses import dataclass, field
@@ -15,10 +16,10 @@ G = 9.81
 
 @dataclass
 class Olcu:
-    H0: float = 0.090   # masa -> omuz ekseni [m] (TAHMİN)
-    L2: float = 0.120   # omuz -> dirsek (TAHMİN)
-    L3: float = 0.100   # dirsek -> bilek eğim ekseni (TAHMİN)
-    L4: float = 0.080   # bilek eğim ekseni -> tutucu ucu (TAHMİN)
+    H0: float = 0.096   # masa -> omuz ekseni [m] (cad/geometri.py H0)
+    L2: float = 0.120   # omuz -> dirsek (L2)
+    L3: float = 0.100   # dirsek -> bilek eğim ekseni (L3)
+    L4: float = 0.095   # bilek eğim ekseni -> tutma noktası (ped merkezi, tutucu 35°'de; açınca kısalır)
 
 
 # Servo eşlemesi: servo_açısı = 90 + yön * eklem_açısı (+ ofset). Montajda kalibre edilir.
@@ -28,9 +29,23 @@ SERVO_OFSET = [0, 0, 0, 0, 0, 0]
 SERVO_MIN = [0, 15, 10, 0, 0, 20]
 SERVO_MAX = [180, 165, 170, 180, 180, 110]
 
-# Kütleler [kg]: servolar veri sayfasından, baskı parçaları TAHMİN (toplam ~230 g, orijinal sayfadaki yoruma göre)
+# Kütleler [kg]: servolar veri sayfasından; baskı parçaları tasarımdan (hacim × PLA 1,24 g/cm³ × %60 doluluk)
 MG996R_KG, SG90_KG = 0.055, 0.009
-PARCA = dict(ust_kol=0.045, on_kol=0.040, bilek=0.025, tutucu=0.035)
+PARCA = dict(ust_kol=0.050, on_kol=0.030, bilek=0.008, tutucu=0.012)
+# Tutucu ağzı (iki ped arası, mm) — servo açısına göre, cad/sim_mesh.py tablosundan (dişli 1:1 açısal çene)
+TUTUCU_AGIZ_MM = [(20, 1.0), (25, 7.5), (30, 12.6), (35, 16.9), (40, 21.3), (45, 25.6), (50, 30.0), (55, 34.3),
+                  (60, 38.5), (65, 42.6), (70, 46.6), (75, 50.4), (80, 54.0), (85, 57.4), (90, 60.5), (95, 63.3),
+                  (100, 65.9), (105, 68.1), (110, 70.0)]
+
+
+def tutucu_agiz(servo_deg):
+    """Tutucu servo açısı -> iki ped arası açıklık (mm), tablo arası doğrusal."""
+    t = TUTUCU_AGIZ_MM
+    s = max(t[0][0], min(t[-1][0], servo_deg))
+    for (a, x), (b, y) in zip(t, t[1:]):
+        if s <= b:
+            return x + (y - x) * (s - a) / (b - a)
+    return t[-1][1]
 # Tork kapasitesi: durma torku (veri sayfası), Nm
 MG996R_DURMA = 9.4 * 0.0980665     # 4,8 V
 SG90_DURMA = 1.2 * 0.0980665       # muhafazakâr (bazı listeler 1,8 kgf·cm)

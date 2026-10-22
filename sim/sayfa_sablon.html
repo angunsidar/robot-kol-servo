@@ -230,7 +230,7 @@ details[open] > summary { margin-bottom: 6px; }
       <details class="nasil"><summary>Ne anlama gelir?</summary><p class="note">Statik tork, servonun durma torkuna oranla (MG996R 9,4 kgf·cm @4,8 V; SG90 muhafazakâr 1,2 kgf·cm). %50'nin üstü servoyu ısıtır ve titretir. Orijinal projede omuza lastik takılmasının sebebi bu.</p></details>
       <dl class="tq" id="tip" style="margin:0"></dl>
     </section>
-    <p class="note">Ölçüler tahmin: masa→omuz 90, üst kol 120, ön kol 100, bilek→uç 80 mm. STL'ler gelince gerçek ölçülerle güncellenecek.</p>
+    <p class="note">Ölçüler kendi tasarımımızdan (cad/): masa→omuz 96, üst kol 120, ön kol 100, bilek→tutma noktası 95 mm. 3B kol basılacak parçaların kendisi.</p>
   </aside>
 </div>
 
@@ -352,12 +352,15 @@ details[open] > summary { margin-bottom: 6px; }
       <tbody id="bom-body"></tbody>
       <tfoot><tr><td colspan="3">Toplam (baskı teklifi 500–2.000 TL aralığında varsayıldı)</td><td class="num" id="bom-top"></td><td></td></tr></tfoot>
     </table></div>
-    <p class="note">Fiyatlar 22 Ekim 2026'da ürün sayfalarından okundu (KDV dahil); stok ve fiyat değişebilir. Prize takılan adaptör seçildi: metal kasalı panel tipi kaynaklar 220 V kablosunun açık klemense elle bağlanmasını ister. "Tahmin" yazanlar doğrulanmadı. 3D model Cults3D'de 2,85 $ ve kişisel kullanım lisanslı görünüyor; satın alma ve indirme sende.</p>
+    <p class="note">Fiyatlar 22 Ekim 2026'da ürün sayfalarından okundu (KDV dahil); stok ve fiyat değişebilir. Prize takılan adaptör seçildi: metal kasalı panel tipi kaynaklar 220 V kablosunun açık klemense elle bağlanmasını ister. "Tahmin" yazanlar doğrulanmadı. Basılacak parçalar bizim tasarımımız (repodaki cad/stl); model satın almak gerekmiyor.</p>
   </section>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+__MESH__
+</script>
 <script>
 __KINEMATIK__
 </script>
@@ -613,20 +616,57 @@ __KAMERA__
   bant.position.z = mm(O.L4) + TOP_UZAK; bant.visible = false; j4.add(bant);
   const cubuk = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, TOP_UZAK, 8), new THREE.MeshStandardMaterial({ color: 0xc8b48a }));
   cubuk.rotation.x = Math.PI / 2; cubuk.position.z = mm(O.L4) + TOP_UZAK / 2; cubuk.visible = false; j4.add(cubuk);
+  // Gerçek tasarım parçaları (cad/sim_mesh.py → servo_mesh.js). Yoksa yukarıdaki kutu çizim kalır.
+  const KOLAG = window.KolMesh;
+  let ceneA = null, ceneB = null;
+  if (KOLAG) {
+    const RM = { parca: MAVI, servo: SIYAH, horn: GRI, burc: TURUNCU };
+    const b64 = (str, T) => { const b = atob(str), u = new Uint8Array(b.length); for (let i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return new T(u.buffer); };
+    const govdeAg = (ad) => {
+      const g = new THREE.Group();
+      for (const [tur, d] of Object.entries(KOLAG.govde[ad] || {})) {
+        const p = b64(d.p, Int32Array), pos = new Float32Array(p.length);
+        for (let i = 0; i < p.length; i++) pos[i] = p[i] * KOLAG.meta.olcek;
+        let geo = new THREE.BufferGeometry();
+        geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+        geo.setIndex(new THREE.BufferAttribute(b64(d.i, Uint32Array), 1));
+        geo = geo.toNonIndexed(); geo.computeVertexNormals();          // keskin kenarlar için düz gölgeleme
+        g.add(new THREE.Mesh(geo, RM[tur]));
+      }
+      return g;
+    };
+    [taban, flans, tabla, omuzBlok, s2, ust, s3, on, s5, bilek, s4, tutBaz, p1, p2].forEach((m) => { m.visible = false; });
+    root.add(govdeAg("taban"));
+    const g1 = govdeAg("govde"); g1.position.z = -j1.position.z; j1.add(g1);   // gövde ağı dünya z'sinde
+    j2.add(govdeAg("ust_kol")); j3.add(govdeAg("on_kol")); j5.add(govdeAg("bilek"));
+    const g5 = govdeAg("tutucu"); g5.position.z = KOLAG.meta.t_horn; j4.add(g5);
+    const zc = KOLAG.meta.t_horn + KOLAG.meta.z_mil;
+    ceneA = new THREE.Group(); ceneA.position.set(-KOLAG.meta.c / 2, 0, zc); ceneA.add(govdeAg("cene_A")); j4.add(ceneA);
+    ceneB = new THREE.Group(); ceneB.position.set(KOLAG.meta.c / 2, 0, zc); ceneB.add(govdeAg("cene_B")); j4.add(ceneB);
+  }
+  // Tutucu ağzı (iki ped arası, mm) ↔ servo açısı: tasarım tablosu
+  const AGIZ = KOLAG ? KOLAG.meta.agiz : [[S.SERVO_MIN[5], 8], [S.SERVO_MAX[5], 40]];
+  const tablo = (t, x, i, j) => { if (x <= t[0][i]) return t[0][j]; for (let k = 1; k < t.length; k++) if (x <= t[k][i]) { const a = t[k - 1], b = t[k]; return a[j] + (b[j] - a[j]) * (x - a[i]) / (b[i] - a[i]); } return t[t.length - 1][j]; };
+  const agizMm = (servo) => tablo(AGIZ, servo, 0, 1);
+  const agizServo = (mm) => tablo(AGIZ, mm, 1, 0);
   const hedefIsaret = new THREE.Mesh(new THREE.SphereGeometry(6, 16, 12), new THREE.MeshBasicMaterial({ color: 0x1f5fbf, transparent: true, opacity: 0.5 }));
   hedefIsaret.visible = false; root.add(hedefIsaret);
 
   // Çizilecek konum: bağlıysa kolun bildirdiği, değilse simülasyon (derece)
   const gosterilen = () => (usb.bagli && usb.konum ? usb.konum : kol.p);
-  const parmak = (a5) => 4 + 16 * (a5 - S.SERVO_MIN[5]) / (S.SERVO_MAX[5] - S.SERVO_MIN[5]);   // çene yarı açıklığı, mm
+  const parmak = (a5) => agizMm(a5) / 2;   // ped yarı açıklığı, mm
   function eklemCiz() {
     const a = gosterilen();
     const q = S.eklemAci(a);   // kalibrasyona göre (yön, ofset)
     j1.rotation.z = q[0] * R; j2.rotation.y = q[1] * R; j3.rotation.y = q[2] * R; j5.rotation.y = q[4] * R; j4.rotation.z = q[3] * R;
-    let ar = parmak(a[5]);
+    let ar = parmak(a[5]), sv = a[5];
     const t = kupler.find((k) => k.tutulan);
-    if (t) ar = Math.max(ar, t.k / 2);                                  // tutulan küpün içine girmesin
+    if (t && ar < t.k / 2) { ar = t.k / 2; sv = agizServo(t.k); }       // tutulan küpün içine girmesin
     p1.position.x = -ar; p2.position.x = ar;
+    if (ceneA) {                                                         // dişliler 1:1: çeneler zıt döner
+      const phi = (KOLAG.meta.phi0 + sv - KOLAG.meta.kapali_servo) * R;
+      ceneA.rotation.y = -phi; ceneB.rotation.y = phi;
+    }
     return a;
   }
   function poz() {
@@ -1568,12 +1608,11 @@ __KAMERA__
     ["M3 cıvata-somun seti (240 adet; tutucu için M3×20)", 1, 180.00, "Robocombo"],
     ["Kargo (Robocombo, 2000 TL altı)", 1, 150.00, "Robocombo"],
     ["5 V 5 A 25 W priz tipi adaptör (MRW-2505)", 1, 371.95, "Direnç.net (+ kargo)"],
-    ["3D model (Cults3D, 2,85 $)", 1, 135, "Cults3D, kur ~47,3"],
   ];
   const tb = document.getElementById("bom-body");
   let top = 0;
   BOM.forEach(([ad, n, b, k]) => { top += n * b; tb.insertAdjacentHTML("beforeend", `<tr><td>${ad}</td><td class="num">${n}</td><td class="num">${fmt(b, 2)} TL</td><td class="num">${fmt(n * b, 0)} TL</td><td>${k}</td></tr>`); });
-  tb.insertAdjacentHTML("beforeend", `<tr><td>3D baskı (~230 g PLA, hizmet)</td><td class="num">1</td><td class="num">teklif</td><td class="num">~500–2.000 TL</td><td>Tahmin: İzmir atölyeleri STL'ye göre teklif veriyor; Armut 2026 ortalaması</td></tr>`);
+  tb.insertAdjacentHTML("beforeend", `<tr><td>3D baskı (~225 g PLA, 11 parça, hizmet)</td><td class="num">1</td><td class="num">teklif</td><td class="num">~500–2.000 TL</td><td>Tahmin: İzmir atölyeleri STL'ye göre teklif veriyor; Armut 2026 ortalaması</td></tr>`);
   document.getElementById("bom-top").textContent = `${fmt(top + 500, 0)} – ${fmt(top + 2000, 0)} TL`;
 
   // ------------------------------------------------ sekmeler, döngü

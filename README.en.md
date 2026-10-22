@@ -1,9 +1,10 @@
 # Servo Robot Arm: firmware, simulation, vision and tooling
 
-A 5-DOF + gripper desktop robot arm (3 × MG996R, 3 × SG90, Arduino Uno, HC-05), built on the mechanical design of
+A 5-DOF + gripper desktop robot arm (3 × MG996R, 3 × SG90, Arduino Uno, HC-05), in the style of
 [How To Mechatronics' DIY Arduino Robot Arm](https://howtomechatronics.com/tutorials/arduino/diy-arduino-robot-arm-with-smartphone-control/).
-Everything except the printed parts was written for this project: firmware, a browser-based digital twin with
-inverse kinematics and colour-sorting vision, a Python client, a URDF and the test suite.
+Everything was written for this project: our own printable parts (parametric CadQuery model sized to MG996R / SG90,
+solid-body collision sweep, STEP/STL, [cad/](cad/README.md)), firmware, a browser-based digital twin with inverse
+kinematics and colour-sorting vision, a Python client, a URDF and the test suite.
 
 > Status: software complete and verified in simulation; hardware not yet assembled (parts and prints pending).
 > Detailed Turkish documentation: [README.md](README.md).
@@ -78,11 +79,12 @@ Measured in the virtual scene (oblique "laptop" camera): with arm-based auto-cal
 
 ## Not yet verified
 
-The arm has not been built. Link lengths, masses and servo limits are estimates until the STL files are measured
-(`stl/stl_olc.py`). Real webcam colour segmentation, the NeoSWSerial jitter fix and the ROS 2 package are untested on
+The arm has not been built. Link lengths and part masses now come from our own CAD design (shoulder height 96,
+upper arm 120, forearm 100, wrist to grip point 95 mm); a few servo dimensions (ear hole spacing, horn height) are
+still estimates to be measured before printing. Print tolerances, real webcam colour segmentation, the NeoSWSerial jitter fix and the ROS 2 package are untested on
 hardware.
 
 ## Credits
 
-The mechanical design and STL files belong to How To Mechatronics, are sold on Cults3D, and are not included in this
-repository. The firmware is an independent implementation compatible with their Android app's command format.
+The arm concept follows How To Mechatronics' design; the printed parts in `cad/` are an independent design (their STL
+files are not used or included). The firmware is an independent implementation compatible with their Android app's command format.

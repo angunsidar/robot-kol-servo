@@ -4,14 +4,14 @@
   const R = Math.PI / 180;
   const G = 9.81;
   const MG996R_KG = 0.055, SG90_KG = 0.009;
-  const PARCA = { ust_kol: 0.045, on_kol: 0.040, bilek: 0.025, tutucu: 0.035 };
+  const PARCA = { ust_kol: 0.050, on_kol: 0.030, bilek: 0.008, tutucu: 0.012 };   // cad/ tasarımından
   // Montaj kalibrasyonu: servo = 90 + yön · eklem + ofset. Varsayılanlar servo_model.py ile aynı; sayfa
   // kalibrasyon sekmesinden kalibrasyon() ile değiştirir (eklem 0° = referans pozu, bkz. README).
   const SERVO_YON = [1, 1, 1, 1, 1, 1], SERVO_OFSET = [0, 0, 0, 0, 0, 0];
   const SERVO_MIN = [0, 15, 10, 0, 0, 20], SERVO_MAX = [180, 165, 170, 180, 180, 110];
   const KAPASITE = { J2: 9.4 * 0.0980665, J3: 9.4 * 0.0980665, J5: 1.2 * 0.0980665 };
 
-  const olcu = () => ({ H0: 0.09, L2: 0.12, L3: 0.10, L4: 0.08 });
+  const olcu = () => ({ H0: 0.096, L2: 0.12, L3: 0.10, L4: 0.095 });   // cad/geometri.py
 
   function servoAci(q) { const out = []; for (let i = 0; i < 5; i++) out.push(90 + SERVO_YON[i] * q[i] + SERVO_OFSET[i]); return out; }
   function eklemAci(s) { const out = []; for (let i = 0; i < 5; i++) out.push((s[i] - 90 - SERVO_OFSET[i]) * SERVO_YON[i]); return out; }

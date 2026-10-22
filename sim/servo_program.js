@@ -10,7 +10,7 @@
 //   { tip: "bekle", ms }
 (function (root) {
   "use strict";
-  const ACIK = 100, KAPALI = 35;   // tutucu varsayılanları (°); nesneye göre ayarlanır, kapalıda servo zorlanmasın
+  const ACIK = 70, KAPALI = 35;    // tutucu varsayılanları (°): ağız 47 / 17 mm (cad tasarımı); nesneye göre ayarlanır
   const ARA_MM = 5, ARA_DER = 5;   // düz yolda ara nokta aralığı
   const ARA_TOL = 15;              // ara noktayı "geçti" saymak için en büyük eklem farkı (onda bir derece)
 

@@ -33,25 +33,25 @@
 
   <link name="govde">
     <visual>
-      <origin xyz="0 0 0.075" rpy="0 0 0"/>
-      <geometry><box size="0.04 0.056 0.03"/></geometry>
+      <origin xyz="0 0 0.078" rpy="0 0 0"/>
+      <geometry><box size="0.04 0.056 0.036"/></geometry>
       <material name="mavi"/>
     </visual>
     <collision>
-      <origin xyz="0 0 0.075" rpy="0 0 0"/>
-      <geometry><box size="0.04 0.056 0.03"/></geometry>
+      <origin xyz="0 0 0.078" rpy="0 0 0"/>
+      <geometry><box size="0.04 0.056 0.036"/></geometry>
     </collision>
     <inertial>
-      <origin xyz="0 0 0.075" rpy="0 0 0"/>
+      <origin xyz="0 0 0.078" rpy="0 0 0"/>
       <mass value="0.105"/>
-      <inertia ixx="3.5315e-05" ixy="0" ixz="0" iyy="2.1875e-05" iyz="0" izz="4.144e-05"/>
+      <inertia ixx="3.878e-05" ixy="0" ixz="0" iyy="2.534e-05" iyz="0" izz="4.144e-05"/>
     </inertial>
   </link>
 
   <joint name="j2_omuz" type="revolute">
     <parent link="govde"/>
     <child link="ust_kol"/>
-    <origin xyz="0 0 0.09" rpy="0 0 0"/>
+    <origin xyz="0 0 0.096" rpy="0 0 0"/>
     <axis xyz="0 1 0"/>
     <limit lower="-1.309" upper="1.309" effort="0.921825" velocity="1.16355"/>
   </joint>
@@ -68,8 +68,8 @@
     </collision>
     <inertial>
       <origin xyz="0 0 0.06" rpy="0 0 0"/>
-      <mass value="0.1"/>
-      <inertia ixx="0.0001227" ixy="0" ixz="0" iyy="0.000125633" iyz="0" izz="8.33333e-06"/>
+      <mass value="0.105"/>
+      <inertia ixx="0.000128835" ixy="0" ixz="0" iyy="0.000131915" iyz="0" izz="8.75e-06"/>
     </inertial>
   </link>
 
@@ -93,8 +93,8 @@
     </collision>
     <inertial>
       <origin xyz="0 0 0.05" rpy="0 0 0"/>
-      <mass value="0.058"/>
-      <inertia ixx="4.95707e-05" ixy="0" ixz="0" iyy="5.11173e-05" iyz="0" izz="4.02133e-06"/>
+      <mass value="0.048"/>
+      <inertia ixx="4.1024e-05" ixy="0" ixz="0" iyy="4.2304e-05" iyz="0" izz="3.328e-06"/>
     </inertial>
   </link>
 
@@ -143,59 +143,59 @@
     </collision>
     <inertial>
       <origin xyz="0 0 0.024" rpy="0 0 0"/>
-      <mass value="0.034"/>
-      <inertia ixx="2.18733e-06" ixy="0" ixz="0" iyy="7.62733e-06" iyz="0" izz="6.55067e-06"/>
+      <mass value="0.017"/>
+      <inertia ixx="1.09367e-06" ixy="0" ixz="0" iyy="3.81367e-06" iyz="0" izz="3.27533e-06"/>
     </inertial>
   </link>
 
   <link name="parmak_sag">
     <visual>
-      <origin xyz="0 0 0.022" rpy="0 0 0"/>
-      <geometry><box size="0.006 0.012 0.044"/></geometry>
+      <origin xyz="0 0 0.01525" rpy="0 0 0"/>
+      <geometry><box size="0.006 0.012 0.0305"/></geometry>
       <material name="beyaz"/>
     </visual>
     <collision>
-      <origin xyz="0 0 0.022" rpy="0 0 0"/>
-      <geometry><box size="0.006 0.012 0.044"/></geometry>
+      <origin xyz="0 0 0.01525" rpy="0 0 0"/>
+      <geometry><box size="0.006 0.012 0.0305"/></geometry>
     </collision>
     <inertial>
-      <origin xyz="0 0 0.022" rpy="0 0 0"/>
-      <mass value="0.0175"/>
-      <inertia ixx="3.03333e-06" ixy="0" ixz="0" iyy="2.87583e-06" iyz="0" izz="2.625e-07"/>
+      <origin xyz="0 0 0.01525" rpy="0 0 0"/>
+      <mass value="0.006"/>
+      <inertia ixx="5.37125e-07" ixy="0" ixz="0" iyy="4.83125e-07" iyz="0" izz="9e-08"/>
     </inertial>
   </link>
 
   <joint name="tutucu" type="prismatic">
     <parent link="tutucu_govde"/>
     <child link="parmak_sag"/>
-    <origin xyz="0 0 0.036" rpy="0 0 0"/>
+    <origin xyz="0 0 0.0645" rpy="0 0 0"/>
     <axis xyz="1 0 0"/>
-    <limit lower="0.004" upper="0.02" effort="0.11768" velocity="0.05"/>
+    <limit lower="0.0005" upper="0.035" effort="0.11768" velocity="0.05"/>
   </joint>
 
   <link name="parmak_sol">
     <visual>
-      <origin xyz="0 0 0.022" rpy="0 0 0"/>
-      <geometry><box size="0.006 0.012 0.044"/></geometry>
+      <origin xyz="0 0 0.01525" rpy="0 0 0"/>
+      <geometry><box size="0.006 0.012 0.0305"/></geometry>
       <material name="beyaz"/>
     </visual>
     <collision>
-      <origin xyz="0 0 0.022" rpy="0 0 0"/>
-      <geometry><box size="0.006 0.012 0.044"/></geometry>
+      <origin xyz="0 0 0.01525" rpy="0 0 0"/>
+      <geometry><box size="0.006 0.012 0.0305"/></geometry>
     </collision>
     <inertial>
-      <origin xyz="0 0 0.022" rpy="0 0 0"/>
-      <mass value="0.0175"/>
-      <inertia ixx="3.03333e-06" ixy="0" ixz="0" iyy="2.87583e-06" iyz="0" izz="2.625e-07"/>
+      <origin xyz="0 0 0.01525" rpy="0 0 0"/>
+      <mass value="0.006"/>
+      <inertia ixx="5.37125e-07" ixy="0" ixz="0" iyy="4.83125e-07" iyz="0" izz="9e-08"/>
     </inertial>
   </link>
 
   <joint name="tutucu_ayna" type="prismatic">
     <parent link="tutucu_govde"/>
     <child link="parmak_sol"/>
-    <origin xyz="0 0 0.036" rpy="0 0 0"/>
+    <origin xyz="0 0 0.0645" rpy="0 0 0"/>
     <axis xyz="1 0 0"/>
-    <limit lower="-0.02" upper="-0.004" effort="0.11768" velocity="0.05"/>
+    <limit lower="-0.035" upper="-0.0005" effort="0.11768" velocity="0.05"/>
     <mimic joint="tutucu" multiplier="-1" offset="0"/>
   </joint>
 
@@ -203,7 +203,7 @@
   <joint name="uc_sabit" type="fixed">
     <parent link="tutucu_govde"/>
     <child link="uc"/>
-    <origin xyz="0 0 0.08" rpy="0 0 0"/>
+    <origin xyz="0 0 0.095" rpy="0 0 0"/>
   </joint>
 
 </robot>

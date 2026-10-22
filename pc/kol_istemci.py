@@ -42,7 +42,7 @@ class Kol:
         """port: read(n) (beklemeden, yoksa b"") ve write(bayt) yapan nesne (pyserial Serial(timeout=0) ya da test portu)."""
         self.port, self.saat, self.uyu = port, saat, uyu
         self.olcu = olcu or sm.Olcu()
-        self.acik, self.kapali = 100.0, 35.0
+        self.acik, self.kapali = 70.0, 35.0     # ağız 47 / 17 mm (cad tasarımı)
         self.mesajlar = []          # Arduino'nun "@" dışındaki satırları (sırayla)
         self.hedef = None           # kola son gönderilen hedef, onda bir derece (6)
         self._tampon = b""

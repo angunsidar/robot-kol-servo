@@ -13,6 +13,9 @@ service-account*.json
 # --- Satın alınan How To Mechatronics model dosyaları: lisans gereği paylaşılmaz ---
 *.stl
 *.STL
+# kendi tasarımımızın STL'leri repoda (HTM STL'leri değil)
+!cad/stl/*.stl
+cad/model_rapor.json
 *.zip
 stl/parcalar.csv
 
@@ -35,3 +38,6 @@ log/
 .claude/
 .DS_Store
 Thumbs.db
+
+# Onshape belge kimlikleri (yerel)
+onshape/durum.json

@@ -7,7 +7,8 @@ aynı olduğunu denetler.
     python urdf_uret.py                                   # -> ../ros2/servo_kol_description/urdf/servo_kol.urdf
     python urdf_uret.py --kalibrasyon ../pc/kalibrasyon.json
 
-ÖLÇÜLER ve KÜTLELER TAHMİN (servo_model.py). STL'ler gelince güncellenip yeniden üretilecek.
+ÖLÇÜLER ve KÜTLELER kendi tasarımımızdan (servo_model.py ← cad/geometri.py). Tutucu açısal (dişli çene); URDF'te
+prismatik parmakla yaklaşık gösterilir: parmak konumu = ped ağzının yarısı.
 """
 import argparse
 import json
@@ -22,14 +23,14 @@ CIKIS = HERE.parent / "ros2" / "servo_kol_description" / "urdf" / "servo_kol.urd
 # Eklem adları (ROS joint_states sırası) -> servo numarası
 EKLEMLER = ["j1_govde", "j2_omuz", "j3_dirsek", "j4_bilek_donus", "j5_bilek_egim"]
 TUTUCU = "tutucu"                         # prismatik: parmak açıklığı (m), servo 6'dan
-PARMAK_MIN, PARMAK_MAX = 0.004, 0.020     # sim/sayfa_sablon.html ile aynı (parmak başına, merkezden)
-PARMAK_Z = 0.036                          # tutucu tabanından parmak başlangıcı
+PARMAK_MIN = sm.tutucu_agiz(sm.SERVO_MIN[5]) / 2000   # parmak başına, merkezden (m)
+PARMAK_MAX = sm.tutucu_agiz(sm.SERVO_MAX[5]) / 2000
+PARMAK_Z = 0.0645                         # bilek eğim ekseninden çene mili (dönüş horn 46,5 + 18)
 
 
 def parmak_aciklik(servo6_deg):
-    """Tutucu servo açısı -> parmak konumu (m)."""
-    a = (servo6_deg - sm.SERVO_MIN[5]) / (sm.SERVO_MAX[5] - sm.SERVO_MIN[5])
-    return PARMAK_MIN + max(0.0, min(1.0, a)) * (PARMAK_MAX - PARMAK_MIN)
+    """Tutucu servo açısı -> parmak konumu (m): ped ağzının yarısı."""
+    return sm.tutucu_agiz(servo6_deg) / 2000
 
 
 def _f(v):
