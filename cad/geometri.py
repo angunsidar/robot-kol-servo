@@ -110,7 +110,8 @@ UST_X = (-17.0, 17.0)   # üst kolun yanal (x) aralığı: bütün elemanlar ayn
 ON_X = (-9.5, 17.0)     # ön kol: J5 ucu ±9,5 olmak zorunda (dönüş servosu süpürmesi) → tablaya bakan yüz −9,5
 CATAL_R = 17.0          # çatal levha uç yarıçapı
 UST_B_BOY = L2 - 30.0   # üst kol B levhası J3'ün 30 mm altında biter (ön kol çatal ucu r ≤ 17 + pay)
-KOPRU_R = (28.0, 33.0)  # çatal köprüsü (eksenden radyal)
+KOPRU_R = (28.0, 38.0)  # çatal köprüsü (eksenden radyal). 10 mm: eklem momenti köprüden burulmayla geçer ve
+                        # yan yatık baskıda bu kayma katmanlar arasına düşer (mukavemet.py S3) → kalın
 HAFIF_PAY = 6.0         # hafifletme penceresi ↔ levha kenarı / köprü arası et
 KULAK_LEVHA_R = 24.0    # kulak levhasının eklem çevresindeki yuvarlatması (köprü 28'den başlar)
 YANAK_UST = 10.0        # yan yatık basılan yanağın eksenden üst kesiği (düz)

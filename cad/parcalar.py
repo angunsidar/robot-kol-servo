@@ -220,7 +220,7 @@ def govde():
 
 
 # ----------------------------------------------------------------- ÜST KOL (J2 çatalı + J3 tutucu) — yan yatık
-UST_KOPRU2 = (71.0, 76.0)
+UST_KOPRU2 = (66.0, 76.0)   # J3 tepki torkunu çatala burulmayla aktarır (10 mm, mukavemet.py S3b)
 
 
 def ust_kol():

@@ -1612,7 +1612,7 @@ __KAMERA__
   const tb = document.getElementById("bom-body");
   let top = 0;
   BOM.forEach(([ad, n, b, k]) => { top += n * b; tb.insertAdjacentHTML("beforeend", `<tr><td>${ad}</td><td class="num">${n}</td><td class="num">${fmt(b, 2)} TL</td><td class="num">${fmt(n * b, 0)} TL</td><td>${k}</td></tr>`); });
-  tb.insertAdjacentHTML("beforeend", `<tr><td>3D baskı (~221 g PLA, 11 parça, desteksiz, hizmet)</td><td class="num">1</td><td class="num">teklif</td><td class="num">~500–2.000 TL</td><td>Tahmin: İzmir atölyeleri STL'ye göre teklif veriyor; Armut 2026 ortalaması</td></tr>`);
+  tb.insertAdjacentHTML("beforeend", `<tr><td>3D baskı (~243 g PLA, 11 parça, desteksiz, hizmet)</td><td class="num">1</td><td class="num">teklif</td><td class="num">~500–2.000 TL</td><td>Tahmin: İzmir atölyeleri STL'ye göre teklif veriyor; Armut 2026 ortalaması</td></tr>`);
   document.getElementById("bom-top").textContent = `${fmt(top + 500, 0)} – ${fmt(top + 2000, 0)} TL`;
 
   // ------------------------------------------------ sekmeler, döngü

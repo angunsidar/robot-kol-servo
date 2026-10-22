@@ -8,7 +8,7 @@ Fikir HTM ve benzeri açık kaynak kollardan (5 eksen + tutucu, MG996R omuz/dirs
 
 - **Simülasyon:** sayfadaki 3B kol bu parçaların kendisi ([servo-kol.html](../sim/servo-kol.html))
 - **Baskı dosyaları:** [stl/](stl/) (bastırılacak), [step/](step/) (CAD; `servo_kol_montaj.step` servo zarflarıyla birlikte montaj)
-- **Onshape:** [Servo Kol - basilabilir parcalar v1](https://cad.onshape.com/documents/07bb5b398428e26948303ebf/w/7504388708d5db1c149c24d5) (özel belge). Bu belge 2026-10-22 sürümünü gösteriyor; güncel STEP repoda. Onshape API'sinin yazma kotası dolu olduğu için yeni sürüm arayüzden ("Import") yüklenecek.
+- **Onshape:** [Servo Kol - basilabilir parcalar v2](https://cad.onshape.com/documents/89711f6f1d707f68bb2416e2/w/59ab7944017799fb956341a0) (özel belge, montaj sekmesi `servo_kol`). Onshape'in kendi çekirdeğiyle (Parasolid) bağımsız kontrol: üst kol / ön kol / gövde hacimleri CadQuery ile birebir aynı (88,448 / 44,915 / 50,914 cm³); "Check interference" yalnız üç SG90 horn zarfının kendi miline oturduğu yeri gösteriyor (tasarım gereği), basılacak parçalar arasında çakışma yok. Eski v1 belgesi ilk sürüm.
 
 | Dosya | Ne yapar |
 |---|---|
@@ -16,6 +16,7 @@ Fikir HTM ve benzeri açık kaynak kollardan (5 eksen + tutucu, MG996R omuz/dirs
 | [parcalar.py](parcalar.py) | Parçaların CadQuery modelleri (evolvent dişli dahil) |
 | [model.py](model.py) | Montaj (FK), eklem taramalı **katı çakışma kontrolü**, montaj sırasına göre **tornavida erişimi**, STEP/STL |
 | [kontrol.py](kontrol.py) | Et kalınlıkları, cıvata boyları, dişli kavraması, **dayanım**, tabla sığma, tork, **devrilme**, simülasyon ölçüleriyle eşleşme |
+| [mukavemet.py](mukavemet.py) | **Statik mukavemet:** CAD kütleleriyle eklem tepkileri, 19 kesit + 7 bağlantı, katman yönüne göre izin, sehim → [MUKAVEMET.md](MUKAVEMET.md) |
 | [baski.py](baski.py) | **Baskı analizi:** 0,5 mm voksel, 6 yön; köprü / çıkıntı / havada başlayan bölge ayrımı, ışınla en ince duvar |
 | [gorsel.py](gorsel.py) | `docs/parcalar.png` ve `docs/montaj.png` |
 | [sim_mesh.py](sim_mesh.py) | Parçaları simülasyon sayfasına ağ olarak gömer (`sim/servo_mesh.js`) |
@@ -24,6 +25,7 @@ Fikir HTM ve benzeri açık kaynak kollardan (5 eksen + tutucu, MG996R omuz/dirs
 ```bash
 pip install cadquery
 python kontrol.py      # 52/52 GEÇTİ olmalı
+python mukavemet.py    # HEPSİ GEÇTİ + MUKAVEMET.md
 python baski.py        # 11/11 desteksiz, duvarlar ≥ 1,2 mm (~1 dk)
 python model.py        # 42 tornavida yolu + 142 eklem konumunda çakışma + STEP/STL (~1,5 dk)
 python sim_mesh.py     # simülasyon ağları; sonra: python ../sim/build_page.py
@@ -38,12 +40,12 @@ python gorsel.py       # belge görselleri
 | Tornavida erişimi: 42 vida (montaj sırasında o an takılı parçalarla) | **hepsi açık** |
 | Baskı: 11 parça, destek gereği ve en ince duvar | **11/11 desteksiz**, en ince duvar 1,3 mm |
 | Dişliler: m 1,5, 16 diş, 20° | her açıda 0,14 mm diş boşluğu, kavrama oranı 1,50, evolvent dışı temas yok |
-| Dayanım (servo **durma** torkunda, izin 10 MPa) | dişli kökü 6,6 · MG horn vidası yatağı 2,7 · üst kol levhası 1,3 MPa |
-| Tork (eklem sınırları içinde en kötü poz, 50 g yük) | omuz %46, dirsek %20, bilek SG90 %57 (1,2 kgf·cm ile; 1,8 ile %38) |
-| Tabla sığma (220 × 220) | hepsi; en büyüğü üst kol 161 mm. Toplam ~221 g PLA (%60 doluluk varsayımı) |
+| Mukavemet ([MUKAVEMET.md](MUKAVEMET.md)): 19 kesit + 7 bağlantı, servo **durma** torkunda (MG996R 13 kgf·cm, en kötü beyan), PLA katman içi 51 / katmanlar arası 17 MPa, emniyet 3 | **hepsi geçiyor.** En kritik: ön kol köprüsünün burulması, katmanlar arası, gerilme / izin %69 (kırılmaya karşı emniyet 4,3). Uç sehimi 0,27 mm; servo ölü bandı tek eklemde ~2,5 mm |
+| Tork (eklem sınırları içinde en kötü poz, 50 g yük) | omuz %48, dirsek %20, bilek SG90 %57 (1,2 kgf·cm ile; 1,8 ile %38). **200 g tam uzanıkta kaldırılamaz** (omuz %97) |
+| Tabla sığma (220 × 220) | hepsi; en büyüğü üst kol 161 mm. Toplam ~243 g PLA (%60 doluluk varsayımı) |
 | Kinematik ölçüler simülasyonla aynı | masa → omuz 96, üst kol 120, ön kol 100, bilek → tutma noktası 95 mm; testler 8/8 |
 
-> ⚠️ **Devrilme:** taban masaya vidalanmazsa kol uzandığında devrilir. 50 g yükle ağırlık merkezi eksenden 92 mm'ye çıkıyor, taban yarıçapı 62 mm. Ya 3 delikten masaya / bir tahtaya vidala (önerilen) ya da tabanın içine ~300 g ağırlık koy.
+> ⚠️ **Devrilme:** taban masaya vidalanmazsa kol uzandığında devrilir. 50 g yükle ağırlık merkezi eksenden 91 mm'ye çıkıyor, taban yarıçapı 62 mm. Ya 3 delikten masaya / bir tahtaya vidala (önerilen) ya da tabanın içine ~300 g ağırlık koy.
 
 **Doğrulanmayanlar:** gerçek baskı toleransı ve köprü sarkması, PLA'nın sünmesi, servo ölçülerinin TAHMİN olanları (aşağıda). Yazılım kontrolü fiziksel denemenin yerini tutmaz.
 
@@ -75,7 +77,7 @@ python gorsel.py       # belge görselleri
 | cene_A, cene_B | 1 + 1 | 51 × 27 × 5 | düz |
 | burc_MG / burc_SG / burc_tutucu | 2 / 1 / 1 | Ø6 | dik |
 
-PLA, 0,2 mm katman, 3–4 duvar, %30–40 dolgu. Çeneler ve burçlar %100 dolgu. **Destek gerekmiyor.** En uzun köprü üst koldaki J3 servo penceresinin üst kenarı (~41 mm); orada servo için 0,4 mm sarkma payı bırakıldı.
+PLA, 0,2 mm katman, %30–40 dolgu, **üst kol ve ön kol en az 4 duvar** (köprüler burulmada kapalı kabuk gibi çalışmalı, [MUKAVEMET.md](MUKAVEMET.md)), diğerleri 3 duvar. Çeneler ve burçlar %100 dolgu. **Destek gerekmiyor.** En uzun köprü üst koldaki J3 servo penceresinin üst kenarı (~41 mm); orada servo için 0,4 mm sarkma payı bırakıldı.
 
 ## Cıvatalar (M3 seti)
 
@@ -105,6 +107,7 @@ Setteki boylar ürün sayfasında yazmıyor; geldiğinde 10 ve 16 mm olduğunu k
 ## Tasarım kararları
 
 - **Çatal eklem + karşı yatak:** omuz, dirsek ve bilek eğimde sürülen parça servonun iki yanını sarıyor: bir yanı horn'a, öbür yanı burç üzerinden tutucunun yanağına. Servo mili yalnız tork taşıyor, eğilme yükünü yanak alıyor.
+- **Köprüler 10 mm:** eklem momenti çatal köprüsünden burulmayla geçiyor; yan yatık baskıda bu kayma katmanlar arasına düşüyor (en zayıf yön, 17 MPa). 5 mm'de ön kol köprüsünde durma torkunda emniyet ~1,3 çıkıyordu; 10 mm ile 4,3.
 - **Desteksiz baskı:** üst kol ve ön kol yan yatırılarak basılıyor. Bütün elemanların tablaya bakan yüzü aynı düzlemde, yuvarlak uçların tabla tarafı 45° pahlı, hafifletme pencereleri sivri uçlu. Gövde diskte, bilek ters, tutucu tabanında; tutucunun dişli göbeği tabana inen bir sütunla taşınıyor.
 - **Ölçü belirsizliğine dayanıklılık:** karşı yatak cıvatası yanakta oluklu (MG ±1,5, SG ±0,8 mm), mil yeri tahmininden bağımsız hizalanıyor. Çatal ↔ yanak 2 mm boşluk horn yüksekliği belirsizliğini pulla karşılıyor. Horn bağlantısı radyal oluklu, kutudaki farklı horn'lara ve metal diske uyuyor; iç yüzdeki havşa çıkıntılı horn göbeğini alıyor.
 - **Devrilme halkası:** taban halkası gövde diskinin 2,5 mm altında; kol devrilmeye zorlanınca disk halkaya dayanır, J1 milini korur (tabanın masaya vidalanması yine şart).

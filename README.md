@@ -6,7 +6,7 @@
 |---|---|
 | ![Simülasyon](docs/simulasyon.jpg) | ![Kamera](docs/kamera.jpg) |
 
-**Durum (2026-10-23):** 🟡 Kod, bağlantı şeması, parça listesi, simülasyon, bilgisayardan (sayfa + Python) kontrol, kamerayla renge göre ayırma, URDF ve **kendi basılabilir parçalarımız** ([cad/](cad/README.md), [Onshape](https://cad.onshape.com/documents/07bb5b398428e26948303ebf/w/7504388708d5db1c149c24d5)) hazır → parçalar gelince servo ölçümü, baskı, montaj
+**Durum (2026-10-23):** 🟡 Kod, bağlantı şeması, parça listesi, simülasyon, bilgisayardan (sayfa + Python) kontrol, kamerayla renge göre ayırma, URDF ve **kendi basılabilir parçalarımız** ([cad/](cad/README.md), [Onshape](https://cad.onshape.com/documents/89711f6f1d707f68bb2416e2/w/59ab7944017799fb956341a0)) hazır → parçalar gelince servo ölçümü, baskı, montaj
 **Simülasyon:** [Servo Robot Kol](https://claude.ai/artifact/D32LwbD25vqgeYUP6Asrh4) (3B kol, uygulama kaydırıcıları, SAVE/RUN, ters kinematik, tork, bağlantı şeması, parça listesi). Gerçek kola bağlanmak için aynı sayfa yerelden açılır: [§3](#3-bilgisayardan-kontrol-dijital-ikiz)
 
 Masaüstü, 5 eksen + tutucu, 3D baskı gövdeli Arduino kolu. Fikir How To Mechatronics'in "DIY Arduino Robot Arm with Smartphone Control" projesinden; **parçalar onların STL'leri değil**, MG996R / SG90 ölçülerine göre CadQuery ile tasarlandı ve katı çakışma kontrolünden geçti ([cad/README.md](cad/README.md)). Arduino kodu bu proje için ayrıca yazıldı; orijinal telefon uygulamasının komutlarını anlıyor.
@@ -41,7 +41,7 @@ Fiyatlar 2026-10-22'de ürün sayfalarından okundu (KDV dahil, indirimli fiyat)
 | Parça | Fiyat | Nereden |
 |---|---|---|
 | 5 V 5 A 25 W **priz tipi** adaptör (Mervesan MRW-2505), kısa devre ve aşırı yük korumalı | 371,95 TL + kargo | [Direnç.net](https://www.direnc.net/priz-tipi-5v-5a-25w-adaptor-mrw-2505). Çıkış jakı ölçüsü sayfada yok: ya satıcıya sor ya da DC tarafında fişi kesip kabloyu doğrudan breadboard / klemense bağla |
-| 3D baskı, ~221 g PLA (11 parça, desteksiz, [cad/stl](cad/stl/)) | ~500–2.000 TL **(tahmin)** | İzmir atölyeleri STL'ye bakıp teklif veriyor ([Armut ilanları](https://armut.com/bornova-3d-baski)); Armut'un 2026 ortalaması 1–5 parçalık işler için 500–2.000 TL ([Armut](https://armut.com/fiyatlari/3d-baski_12669)). Gram fiyatı kaynaklarda 0,5–20 TL arasında, tutarsız |
+| 3D baskı, ~243 g PLA (11 parça, desteksiz, [cad/stl](cad/stl/)) | ~500–2.000 TL **(tahmin)** | İzmir atölyeleri STL'ye bakıp teklif veriyor ([Armut ilanları](https://armut.com/bornova-3d-baski)); Armut'un 2026 ortalaması 1–5 parçalık işler için 500–2.000 TL ([Armut](https://armut.com/fiyatlari/3d-baski_12669)). Gram fiyatı kaynaklarda 0,5–20 TL arasında, tutarsız |
 | Lastik bant (omuz) | – | evde bulunur |
 
 **Değişenler (19 Ekim listesine göre):**
@@ -50,7 +50,7 @@ Fiyatlar 2026-10-22'de ürün sayfalarından okundu (KDV dahil, indirimli fiyat)
 - **Önceki adaptör önerisi düzeltildi.** MS-25-5 metal kasalı panel tipi bir güç kaynağı; 220 V kablosu açık vida klemenslerine elle bağlanıyor, hobi projesi için gereksiz bir çarpılma riski. Üstelik stokta yok. Prize takılan hazır adaptör hem güvenli hem pratik.
 - How To Mechatronics 5 V 2 A kaynak kullanmış. 5 A seçmemizin sebebi, üç MG996R'nin aynı anda zorlanınca (her biri 2,5 A'e kadar) adaptörü çökertmemesi.
 
-221 g, kendi parçalarımızın hacminden (%60 doluluk varsayımı); dilimleyici kesinleştirir. HTM modeli artık gerekmiyor (önceki listedeki 135 TL çıktı).
+243 g, kendi parçalarımızın hacminden (%60 doluluk varsayımı); dilimleyici kesinleştirir. HTM modeli artık gerekmiyor (önceki listedeki 135 TL çıktı).
 
 Servo verileri: MG996R 9,4 kgf·cm @4,8 V, 55 g, durma akımı 2,5 A ([TowerPro veri sayfası](https://courses.ece.cornell.edu/ece5990/ECE5725_Spring2020_Projects/May_15_Demo/Smart%20Lock/W_pp445_yl656/datasheet/MG996R_Tower-Pro.pdf)). SG90 1,2–1,8 kgf·cm, 9 g ([veri sayfası](https://bit.nkust.edu.tw/~csshieh/teach/111A/mc/datasheet/SG90.pdf); yeni listelerde 1,2, muhafazakâr değer bu).
 
@@ -59,7 +59,7 @@ Servo verileri: MG996R 9,4 kgf·cm @4,8 V, 55 g, durma akımı 2,5 A ([TowerPro 
 ## 2. Adımlar
 
 1. **Servolar gelince ölç:** [cad/README.md](cad/README.md#servolar-gelince-baskıdan-önce-ölç) tablosundaki tahmini ölçüleri (kulak delik aralığı, horn yüksekliği) kumpasla ölç, `cad/geometri.py`'ye yaz, `python cad/kontrol.py` ve `python cad/model.py` çalıştır. Bastırdıktan sonra düzeltmek pahalı.
-2. **Bastır:** [cad/stl/](cad/stl/) içindeki 11 parça (burçlardan 2 tane `burc_MG`). PLA, 3–4 duvar, %30–40 dolgu; çene ve burçlar %100. Hepsi desteksiz basılıyor; baskı yönleri ve montaj sırası: [cad/README.md](cad/README.md).
+2. **Bastır:** [cad/stl/](cad/stl/) içindeki 11 parça (burçlardan 2 tane `burc_MG`). PLA, %30–40 dolgu; üst kol ve ön kol en az 4 duvar, diğerleri 3; çene ve burçlar %100. Hepsi desteksiz basılıyor; baskı yönleri ve montaj sırası: [cad/README.md](cad/README.md).
    - **Tabanı masaya ya da bir tahtaya vidala:** vidasız kol uzanınca devrilir ([hesap](cad/README.md#doğrulananlar-2026-10-23)).
 3. **Kablola:** Simülasyon sayfasındaki "Bağlantı şeması" sekmesi. Kısaca:
 
@@ -248,7 +248,7 @@ kol.kapat()
 | [sim/urdf_uret.py](sim/urdf_uret.py) + [test](sim/test_urdf.py) | URDF üretici; FK denkliği 4 test ✅ |
 | [sim/servo_kamera.js](sim/servo_kamera.js) + [test](sim/test_kamera.js) | Kamera: homografi, renk, leke, kamera konumu, taban bulma, küp yönü, tutuş ve plan, kolla otomatik kalibrasyon; `node test_kamera.js`, 16 test ✅ |
 | [ros2/](ros2/servo_kol_description/) + [pc/ros2_kopru.py](pc/ros2_kopru.py) | ROS 2 paket iskeleti ve köprü (denenmedi) |
-| [cad/](cad/README.md) | **Basılabilir parçalar:** CadQuery modeli (tek ölçü dosyası `geometri.py`), 142 eklem konumunda katı çakışma taraması (0 çakışma), 42 vidada tornavida erişimi, 11/11 desteksiz baskı analizi, 52 tasarım + dayanım kontrolü, STEP/STL, simülasyon ağları ✅ |
+| [cad/](cad/README.md) | **Basılabilir parçalar:** CadQuery modeli (tek ölçü dosyası `geometri.py`), 142 eklem konumunda katı çakışma taraması (0 çakışma), 42 vidada tornavida erişimi, 11/11 desteksiz baskı analizi, 52 tasarım kontrolü, [statik mukavemet hesabı](cad/MUKAVEMET.md) (19 kesit + 7 bağlantı), STEP/STL, simülasyon ağları ✅ |
 | [onshape/onshape_yukle.py](onshape/onshape_yukle.py) | Montaj STEP'ini Onshape'e yükler (anahtar `.env`'de, git'e girmez) |
 | [stl/stl_olc.py](stl/stl_olc.py) | Herhangi bir STL klasöründen ölçü, kütle ve baskı maliyeti |
 
@@ -267,7 +267,7 @@ kol.kapat()
 
 ## 5. Sınırlar (simülasyondan)
 
-- **Yük:** Kol yatağa yakın uzanmışken (omuz 75°) 50 g yükte omuz servosu durma torkunun ~%44'ünde, bilek SG90 ~%49'unda. 100 g'da %60 / %88. Pratikte **~50 g** ile rahat çalışır, yakın çalışınca biraz daha fazla.
+- **Yük:** Kol yatağa yakın uzanmışken (omuz 75°) 50 g yükte omuz servosu durma torkunun ~%46'sında, bilek SG90 ~%49'unda. 100 g'da %62 / %88; 200 g'ı tam uzanıkken kaldıramaz ([hesap](cad/MUKAVEMET.md)). Pratikte **~50 g** ile rahat çalışır, yakın çalışınca biraz daha fazla.
 - **Hassasiyet:** Komutlar 0,1° çözünürlükte. Örnek hedefte hesap sapması 0,2 mm (önceki tam derece sürümünde 2,8 mm). Gerçekte sınırı servonun kendi ölü bandı, dişli boşluğu ve titremesi belirler; bu kol kurulunca ölçülecek.
 - **Çalışma alanı dar:** Tasarım ölçüleri ve servo sınırlarıyla, tutucu dik aşağı bakarken uç tabandan yatayda yalnız **~165–215 mm arası bir halkaya** erişiyor (Z'ye göre birkaç mm değişir). Tutucu 45° öne eğikken ~235–280 mm'ye erişiyor; kamera ile ayırma bunları kendisi dener. Nesneleri bu halkaya koymak gerekecek. Sayfadaki "Erişim alanını göster" anlık gösterir.
 - **Ölçüler tasarımdan:** masa → omuz 96, üst kol 120, ön kol 100, bilek → tutma noktası 95 mm (tutucu açıldıkça kısalır, 70°'de 87 mm). Parça kütleleri hacimden; servo ölçülerinin bir kısmı hâlâ tahmin ([cad/README.md](cad/README.md)).
